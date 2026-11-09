@@ -1330,7 +1330,7 @@ popEl.addEventListener('click', e => {
 });
 document.addEventListener('click', e => { if (!e.target.closest('#sort-bar') && !e.target.closest('#popover-menu')) closePopover(); });
 
-function renderRatingComponent(showPriceInput = false){
+function renderRatingComponent(showPriceInput = false, compact = false){
   const priceInputHtml = showPriceInput ? `
     <div class="price-input-card">
       <label>🍲 간짜장 가격을 입력해 주세요</label>
@@ -1374,7 +1374,7 @@ function renderRatingComponent(showPriceInput = false){
       </div>
     </div>
 
-    <input id="c" placeholder="한줄평 (선택 · 비워도 별점 등록 가능)" maxlength="100">
+    ${compact ? '' : `<input id="c" placeholder="한줄평 (선택 · 비워도 별점 등록 가능)" maxlength="100">
     <div class="photo-uploader">
       <label for="review-photo-input" class="photo-upload-btn" id="photo-upload-label">
         <span>📷</span><span>간짜장 사진 첨부 (선택)</span>
@@ -1384,7 +1384,7 @@ function renderRatingComponent(showPriceInput = false){
         <img id="photo-preview-img" src="" alt="미리보기">
         <button type="button" class="photo-remove-btn" onclick="removeSelectedPhoto()">✕</button>
       </div>
-    </div>
+    </div>`}
   `;
 }
 
@@ -1665,31 +1665,40 @@ const A = {
   /* v0.064: 메뉴 > 식당 등록 요청 (비로그인도 가능, store_requests에 '[등록 요청]'으로 저장) */
   navStoreRequest:()=>{
     toggleNav(false);
+    resetScores();
     sheet('<h2>식당 등록 요청</h2><p class="sub nick-welcome-sub">간짜장이 맛있는 식당을 알려 주세요<br>확인한 뒤 후보 간짜장 리스트에 추가할게요</p>' +
       '<input id="sr-name" type="text" maxlength="100" placeholder="가게 이름 (필수)">' +
       '<input id="sr-addr" type="text" maxlength="200" placeholder="주소 또는 지역 (필수) 예: 서울 중구 을지로 124">' +
-      '<input id="sr-price" type="text" inputmode="numeric" maxlength="10" placeholder="간짜장 가격 (선택) 예: 8000">' +
+      renderRatingComponent(true, true) +
       '<textarea id="sr-note" class="nav-textarea" maxlength="1000" placeholder="추천 이유나 참고할 내용 (선택)"></textarea>' +
       '<input id="sr-contact" type="text" maxlength="200" placeholder="답변받을 이메일 또는 연락처 (선택)">' +
       '<p class="nav-form-note">네이버·카카오 지도 링크를 메모에 붙여 주시면 더 빨리 등록할 수 있어요</p>' +
       '<button class="btn primary" id="sr-submit" data-a="submitStoreRequest">요청하기</button>');
+    updateStarsUI();
   },
   submitStoreRequest: async () => {
     const name = $('sr-name')?.value.trim() || '';
     const addr = $('sr-addr')?.value.trim() || '';
-    const price = ($('sr-price')?.value || '').replace(/[^0-9]/g, '');
+    const price = ($('pr')?.value || '').replace(/[^0-9]/g, '');
     const memo = $('sr-note')?.value.trim() || '';
     const contact = $('sr-contact')?.value.trim() || '';
     if (!name) { toast('가게 이름을 입력해 주세요'); return; }
     if (!addr) { toast('주소 또는 지역을 입력해 주세요'); return; }
     if (containsBadWords(name + ' ' + memo)) { toast('욕설이나 비방 표현은 등록할 수 없어요'); return; }
+    if (scores.is_real === null) { toast('1번: 진짜 간짜장인지 선택해주세요'); return; }
+    const missing = [];
+    if (!scores.taste) missing.push('맛');
+    if (!scores.price) missing.push('가격');
+    if (!scores.kind) missing.push('친절');
+    if (missing.length > 0) { toast('별점을 모두 입력해주세요: ' + missing.join(', ')); return; }
+    const total = ((scores.taste + scores.price + scores.kind) / 3).toFixed(1);
     const btn = $('sr-submit');
     if (btn?.disabled) return;
     if (btn) btn.disabled = true;
     const { error } = await db.from('store_requests').insert({
       name: '[등록 요청] ' + name,
       address: addr,
-      note: ['간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
+      note: ['진짜 간짜장: ' + (scores.is_real ? '네' : '아니요(미달)'), '맛 ' + scores.taste + ' · 가격 ' + scores.price + ' · 친절 ' + scores.kind + ' · 종합 ' + total, '간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
     });
     if (error) { if (btn) btn.disabled = false; toast('요청 실패: ' + error.message); return; }
     closeSheet();
