@@ -850,7 +850,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.066</div>
+<div id="ver-badge">v0.067</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -869,7 +869,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.066</div>
+  <div class="nav-foot">MYGJJ · v0.067</div>
 </nav>
 
 <div id="top-container">
@@ -1105,8 +1105,22 @@ async function load(){
     realStats = {}; rs.forEach(x => realStats[x.place_id] = { total: Number(x.total), yes: Number(x.yes) });
     drawPins();
     updatePillLabels();
+    openSharedPlace();
   } catch(e) { console.error(e); toast('데이터를 불러오지 못했어요: ' + e.message); }
 }
+
+/* v0.067: 공유 링크(?place=가게번호)로 들어오면 그 가게를 바로 열기 (처음 한 번만) */
+const SHARED_PLACE_ID = (() => { try { return new URLSearchParams(location.search).get('place'); } catch (e) { return null; } })();
+let sharedPlaceOpened = false;
+function openSharedPlace(){
+  if (!SHARED_PLACE_ID || sharedPlaceOpened) return;
+  const p = places.find(x => String(x.id) === String(SHARED_PLACE_ID));
+  sharedPlaceOpened = true;
+  if (!p) { toast('공유된 가게를 찾지 못했어요'); return; }
+  if (map && typeof naver !== 'undefined') { try { map.setZoom(16); } catch (e) {} }
+  openPlace(p);
+}
+function placeShareUrl(p){ return location.origin + location.pathname + '?place=' + encodeURIComponent(p.id); }
 
 // 평가 수가 많은 가게에 소폭 가중치를 부여하되 별점 등급을 우선합니다.
 function placePriority(p) {
@@ -1518,6 +1532,7 @@ async function openPlace(p){
     '<section class="detail-section"><div class="detail-section-head"><h3>방문자 리뷰</h3><span class="detail-count">최근 ' + rv.length + '개</span></div>' +
     '<div class="detail-reviews">' + reviewsHtml + '</div></section>' +
     '<section class="detail-actions"><button class="btn primary" data-a="openReviewComposer">★ 리뷰 및 사진 등록하기</button>' +
+    '<button class="btn" data-a="sharePlace">🔗 이 가게 공유하기</button>' +
     '<button class="btn detail-secondary-action" data-a="reportPlace">정보 오류 · 개선 제보</button></section>', {fullscreen:true});
   updateVisibleReviewerStats(rv);
 
@@ -1739,6 +1754,18 @@ const A = {
 
   close: () => closeSheet(),
   me: () => me ? openUser(me.id) : openLogin(),
+  sharePlace: async () => {
+    if (!cur) return;
+    const url = placeShareUrl(cur);
+    const title = '간짜장면 · ' + cur.name;
+    const text = cur.name + (cur.address ? ' (' + cur.address + ')' : '') + ' 간짜장 정보';
+    if (navigator.share) {
+      try { await navigator.share({ title, text, url }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(url); toast('링크를 복사했어요'); }
+    catch (e) { prompt('아래 링크를 복사해 주세요', url); }
+  },
   /* v0.066: 내 리뷰 한 개씩 삭제 (한꺼번에 지우기는 제공하지 않음) */
   deleteReview: async d => {
     if (!me || !d.id) return;
@@ -1880,7 +1907,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.066</div>' +
+        '<div><b>버전 정보</b>: v0.067</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -2122,7 +2149,7 @@ const INTRO_KEY = 'mygjj_intro_hidden_v1';
 function showIntro(){
   let hidden = false;
   try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
-  if (hidden || $('sheet').classList.contains('open')) return;
+  if (hidden || SHARED_PLACE_ID || $('sheet').classList.contains('open')) return;
   sheet('<div class="detail-kicker">간짜장면 안내</div><h2>지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
     '<p class="sub nick-welcome-sub" style="margin:22px 0 22px;">지도에 매장 이름이 표시된 곳은 진짜 간짜장 후보 리스트예요<br>' +
     '여러분이 남겨 주시는 평점에 따라 유지될 수도, 삭제될 수도 있어요<br>' +
