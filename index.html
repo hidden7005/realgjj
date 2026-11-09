@@ -318,7 +318,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 .pin.tier-neutral { background: #f2f2f7; color: #636366; }
 .pin.tier-muted { background: #e5e5ea; color: #8e8e93; }
 /* v0.058: 지도는 항상 밝은 색이라 핀은 다크 모드에서도 흰색으로 고정 */
-.pin.tier-none { background: #ffffff; color: #1d1d1f; }
+.pin.tier-none { background: linear-gradient(115deg,#f59e0b,#ea580c); color: #ffffff; border-color: transparent; } /* v0.065: 평점 없는 후보 간짜장 = 주황 */
 .pin.biz { background: rgba(255,255,255,.96); color: #60646a; font-size: 12px; border: 1px solid rgba(60,60,67,.16); }
 /* v0.057: 넓은 축척용 원 표시 (색은 평점 등급, 빨강은 인증된 진짜 간짜장) */
 .pin-dot { width:14px; height:14px; border-radius:50%; transform:translate(-50%,-50%); cursor:pointer; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); background:#c7c7cc; }
@@ -327,7 +327,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 .pin-dot.tier-silver { background:#aeaeb6; }
 .pin-dot.tier-bronze { background:#d39462; }
 .pin-dot.tier-titanium, .pin-dot.tier-neutral, .pin-dot.tier-muted { background:#9a9aa1; }
-.pin-dot.tier-none { background:#ffffff; border-color:#8e8e93; }
+.pin-dot.tier-none { background:linear-gradient(135deg,#f59e0b,#ea580c); }
 .pin-dot.is-real { background:linear-gradient(135deg, var(--apple-real-start), var(--apple-real-end)); border-color:#fff; }
 
 #ver-badge {
@@ -843,7 +843,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.064</div>
+<div id="ver-badge">v0.065</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -862,7 +862,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.064</div>
+  <div class="nav-foot">MYGJJ · v0.065</div>
 </nav>
 
 <div id="top-container">
@@ -1853,7 +1853,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.064</div>' +
+        '<div><b>버전 정보</b>: v0.065</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
