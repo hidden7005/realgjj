@@ -840,7 +840,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.063</div>
+<div id="ver-badge">v0.064</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -852,13 +852,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <div class="nav-section-title">서비스</div>
   <button class="nav-link" type="button" data-a="showAppInfo"><span class="nav-icon">ℹ️</span>서비스 소개</button>
+  <button class="nav-link" type="button" data-a="navStoreRequest"><span class="nav-icon">🍜</span>식당 등록 요청</button>
   <div class="nav-section-title">고객지원</div>
   <button class="nav-link" type="button" data-a="navContact" data-type="report"><span class="nav-icon">🚩</span>문의 · 오류·문제 신고</button>
   <button class="nav-link" type="button" data-a="navContact" data-type="partner"><span class="nav-icon">🤝</span>제휴·광고 문의</button>
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.063</div>
+  <div class="nav-foot">MYGJJ · v0.064</div>
 </nav>
 
 <div id="top-container">
@@ -1661,6 +1662,39 @@ function navContact(type){
 const A = {
   openNearbyBiz:d=>{ const b=biz[d.id]; if(b?._place) openPlace(b._place); else if(b) openNew(b); else toast('식당 정보를 다시 조회해주세요'); },
   closeNav:()=>toggleNav(false),
+  /* v0.064: 메뉴 > 식당 등록 요청 (비로그인도 가능, store_requests에 '[등록 요청]'으로 저장) */
+  navStoreRequest:()=>{
+    toggleNav(false);
+    sheet('<h2>식당 등록 요청</h2><p class="sub nick-welcome-sub">간짜장이 맛있는 식당을 알려 주세요<br>확인한 뒤 후보 간짜장 리스트에 추가할게요</p>' +
+      '<input id="sr-name" type="text" maxlength="100" placeholder="가게 이름 (필수)">' +
+      '<input id="sr-addr" type="text" maxlength="200" placeholder="주소 또는 지역 (필수) 예: 서울 중구 을지로 124">' +
+      '<input id="sr-price" type="text" inputmode="numeric" maxlength="10" placeholder="간짜장 가격 (선택) 예: 8000">' +
+      '<textarea id="sr-note" class="nav-textarea" maxlength="1000" placeholder="추천 이유나 참고할 내용 (선택)"></textarea>' +
+      '<input id="sr-contact" type="text" maxlength="200" placeholder="답변받을 이메일 또는 연락처 (선택)">' +
+      '<p class="nav-form-note">네이버·카카오 지도 링크를 메모에 붙여 주시면 더 빨리 등록할 수 있어요</p>' +
+      '<button class="btn primary" id="sr-submit" data-a="submitStoreRequest">요청하기</button>');
+  },
+  submitStoreRequest: async () => {
+    const name = $('sr-name')?.value.trim() || '';
+    const addr = $('sr-addr')?.value.trim() || '';
+    const price = ($('sr-price')?.value || '').replace(/[^0-9]/g, '');
+    const memo = $('sr-note')?.value.trim() || '';
+    const contact = $('sr-contact')?.value.trim() || '';
+    if (!name) { toast('가게 이름을 입력해 주세요'); return; }
+    if (!addr) { toast('주소 또는 지역을 입력해 주세요'); return; }
+    if (containsBadWords(name + ' ' + memo)) { toast('욕설이나 비방 표현은 등록할 수 없어요'); return; }
+    const btn = $('sr-submit');
+    if (btn?.disabled) return;
+    if (btn) btn.disabled = true;
+    const { error } = await db.from('store_requests').insert({
+      name: '[등록 요청] ' + name,
+      address: addr,
+      note: ['간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
+    });
+    if (error) { if (btn) btn.disabled = false; toast('요청 실패: ' + error.message); return; }
+    closeSheet();
+    toast('식당 등록 요청이 접수됐어요. 감사합니다 🙏');
+  },
   navAccount:()=>{toggleNav(false);me?openUser(me.id):openLogin();},
   navContact:d=>{toggleNav(false);navContact(d.type);},
   submitNavContact:async d=>{
@@ -1807,7 +1841,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.063</div>' +
+        '<div><b>버전 정보</b>: v0.064</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
