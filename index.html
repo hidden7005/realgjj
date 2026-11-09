@@ -840,7 +840,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.062</div>
+<div id="ver-badge">v0.063</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -858,7 +858,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.062</div>
+  <div class="nav-foot">MYGJJ · v0.063</div>
 </nav>
 
 <div id="top-container">
@@ -1807,7 +1807,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.062</div>' +
+        '<div><b>버전 정보</b>: v0.063</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -2041,6 +2041,22 @@ function openNicknameWelcome(username, left){
     '<button class="btn primary" data-a="close">이 닉네임으로 할게요</button></div>' +
     '<p class="sub" style="margin-top:12px;font-size:12px;">남은 횟수는 나중에 내 정보에서도 쓸 수 있어요</p>');
 }
+
+/* v0.063: 첫 화면 안내 팝업 (후보 간짜장 설명). '다시 보지 않기'를 누르면 이 브라우저에서는 더 안 뜸 */
+const INTRO_KEY = 'mygjj_intro_hidden_v1';
+function showIntro(){
+  let hidden = false;
+  try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
+  if (hidden || $('sheet').classList.contains('open')) return;
+  sheet('<div class="detail-kicker">간짜장면 안내</div><h2>지금은 진짜 간짜장<br>데이터를 모으는 중이에요</h2>' +
+    '<p class="sub nick-welcome-sub">지도에 <b>매장 이름이 표시된 곳</b>은 진짜 간짜장 <b>후보 리스트</b>예요<br><br>' +
+    '여러분이 남겨 주시는 평점에 따라 후보로 <b>유지될 수도, 삭제될 수도</b> 있어요<br><br>' +
+    '드셔 보신 곳이 있다면 평점을 남겨 주세요 🍜</p>' +
+    '<div class="btns"><button class="btn primary" data-a="close">확인</button>' +
+    '<button class="btn" data-a="introHide">다시 보지 않기</button></div>');
+}
+A.introHide = () => { try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} closeSheet(); };
+setTimeout(showIntro, 400);
 
 db.auth.getSession().then(({ data }) => {
   me = data.session?.user || null;
