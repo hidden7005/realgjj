@@ -613,6 +613,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .pin.biz-group { background:rgba(255,255,255,.96);color:#60646a;font-size:12px;font-weight:700;border:1px solid rgba(60,60,67,.16);box-shadow:0 3px 11px rgba(0,0,0,.09); }
 .pin.biz-single { max-width:118px; }
 .pin.biz-single .pin-label { overflow:hidden;text-overflow:ellipsis;max-width:97px;display:block; }
+.pin.biz.pin-full { font-size:13px; font-weight:600; padding:6px 12px; box-shadow:0 4px 16px rgba(0,0,0,.15); }
+.pin.biz-single.pin-full { max-width:none; }
+.pin.biz-single.pin-full .pin-label { max-width:none; }
 @media(max-width:420px){ #top {grid-template-columns:42px auto minmax(0,1fr);} #brand-logo{padding:0 7px;} #sort-bar{gap:4px;} .sort-pill{padding:0 10px;} }
 @media(max-width:350px){ #top {grid-template-columns:38px minmax(0,1fr);} #brand-logo{display:none;} #q{grid-column:2;} }
 
@@ -1199,7 +1202,7 @@ function drawPins(){
 
     if (list.length === 1) {
       const p = first;
-      const rateBadge = avg ? `<span style="font-weight:700;font-size:12px;margin-left:2px;">(★${avg}/${rt?.n || 0})</span>` : `<span style="font-weight:700;font-size:12px;margin-left:2px;">(★0.0/0)</span>`;
+      const rateBadge = avg ? `<span style="font-weight:700;font-size:12px;margin-left:2px;">(★${avg}/${rt?.n || 0})</span>` : ''; // v0.064: 평점이 생기기 전에는 표시하지 않음
       const content = `<div class="pin ${tierClass}">${badgeHtml}<span style="font-weight:700">${esc(p.name)}</span> ${rateBadge}</div>`;
 
       const mk = new naver.maps.Marker({
@@ -1228,7 +1231,7 @@ function openPlaceGroup(list){
     '<div style="margin-top:16px;border-radius:18px;overflow:hidden;background:var(--secondary-card-bg);border:0.5px solid var(--separator);">' +
     list.map(p => {
       const rt = rate[p.id];
-      const rateText = rt ? `★${parseFloat(rt.avg_rating).toFixed(1)} (${rt.n})` : '★0.0 (0)';
+      const rateText = rt ? `★${parseFloat(rt.avg_rating).toFixed(1)} (${rt.n})` : '';
       const st = realStats[p.id];
       const isAuthentic = SHOW_REAL && st && st.total >= 3 && ((st.yes / st.total) >= 0.9);
       const badge = isAuthentic ? '<span class="real-badge">🔥 찐</span> ' : '';
@@ -2091,10 +2094,10 @@ function showIntro(){
   let hidden = false;
   try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
   if (hidden || $('sheet').classList.contains('open')) return;
-  sheet('<div class="detail-kicker">간짜장면 안내</div><h2>지금은 진짜 간짜장<br>데이터를 모으는 중이에요</h2>' +
-    '<p class="sub nick-welcome-sub">지도에 <b>매장 이름이 표시된 곳</b>은 진짜 간짜장 <b>후보 리스트</b>예요<br><br>' +
-    '여러분이 남겨 주시는 평점에 따라 후보로 <b>유지될 수도, 삭제될 수도</b> 있어요<br><br>' +
-    '드셔 보신 곳이 있다면 평점을 남겨 주세요 🍜</p>' +
+  sheet('<div class="detail-kicker">간짜장면 안내</div><h2>지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
+    '<p class="sub nick-welcome-sub" style="margin:22px 0 22px;">지도에 매장 이름이 표시된 곳은 진짜 간짜장 후보 리스트예요<br>' +
+    '여러분이 남겨 주시는 평점에 따라 유지될 수도, 삭제될 수도 있어요<br>' +
+    '드셔 보신 곳이 있다면 평점을 남겨 주세요</p>' +
     '<div class="btns"><button class="btn primary" data-a="close">확인</button>' +
     '<button class="btn" data-a="introHide">다시 보지 않기</button></div>');
 }
@@ -2187,6 +2190,7 @@ function onMapIdle(){
   moveDebounce = setTimeout(fetchNearbyBiz, 500);
 }
 
+const BIZ_FULL_ZOOM = 17; // v0.064: 네이버 지도 축척 약 50m부터 일반 중국집 핀도 후보 간짜장 핀과 같은 크기
 async function fetchNearbyBiz(){
   if (!map) return;
   const mySeq = ++nearbySeq;
@@ -2247,9 +2251,10 @@ async function fetchNearbyBiz(){
       const first = list[0].b;
       const isGroup = list.length > 1;
       list.forEach(({b}) => { biz[b.id] = b; });
+      const full = zoom >= BIZ_FULL_ZOOM ? ' pin-full' : '';
       const content = isGroup
-        ? `<div class="pin biz biz-group">+ 중국집 ${list.length}곳</div>`
-        : `<div class="pin biz biz-single">+ <span class="pin-label">${esc(first.name)}</span></div>`;
+        ? `<div class="pin biz biz-group${full}">+ 중국집 ${list.length}곳</div>`
+        : `<div class="pin biz biz-single${full}">+ <span class="pin-label">${esc(first.name)}</span></div>`;
       const mk = new naver.maps.Marker({
         map, position:new naver.maps.LatLng(first.lat,first.lng),
         zIndex:40,
