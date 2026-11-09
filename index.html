@@ -605,6 +605,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .review-report:hover { background:var(--secondary-card-bg); }
 .review-delete { color:#ff3b30; }
 .user-review-actions { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.gjj-farewell { margin:22px 0 8px; padding:22px 16px; border-radius:16px; text-align:center; background:#0b0b0f; color:#ffe81f; }
+.gjj-farewell p { margin:0; font-size:17px; font-weight:700; letter-spacing:.02em; }
+.gjj-farewell .gjj-farewell-en { margin-top:8px; font-size:15px; font-weight:600; font-style:italic; opacity:.9; }
 #sheet .user-review-actions .user-review-go { margin-top:0; }
 #sheet .user-review-actions .review-delete { margin-left:auto; }
 
@@ -1956,8 +1959,10 @@ const A = {
     const { error } = await db.rpc('delete_my_account');
     if (error) { if (btn) btn.disabled = false; toast(error.message || '탈퇴 처리에 실패했어요'); return; }
     await db.auth.signOut();
-    closeSheet();
-    toast('탈퇴가 완료됐어요. 그동안 이용해 주셔서 감사해요');
+    /* v0.066: 탈퇴 인사 */
+    sheet('<div class="detail-kicker">탈퇴 완료</div><h2 style="word-break:keep-all">그동안 이용해 주셔서 감사해요</h2>' +
+      '<div class="gjj-farewell"><p>간짜장이 당신과 함께 하기를</p><p class="gjj-farewell-en">May the GJJ be with you.</p></div>' +
+      '<div class="btns"><button class="btn primary" data-a="close">확인</button></div>');
     load();
   },
   place: d => { const p = places.find(x => x.id === d.id); if (p) openPlace(p); },
