@@ -850,7 +850,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.067</div>
+<div id="ver-badge">v0.068</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -869,7 +869,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.067</div>
+  <div class="nav-foot">MYGJJ · v0.068</div>
 </nav>
 
 <div id="top-container">
@@ -1106,6 +1106,7 @@ async function load(){
     drawPins();
     updatePillLabels();
     openSharedPlace();
+    resumePending();
   } catch(e) { console.error(e); toast('데이터를 불러오지 못했어요: ' + e.message); }
 }
 
@@ -1523,7 +1524,7 @@ async function openPlace(p){
     '<p class="sub detail-address">' + esc(addr || '주소 정보가 없습니다') + '</p>' +
     '<div class="stats"><div><small>간짜장 가격</small><b>' + (priceMissing ? '<span class="detail-price-empty">미등록</span>' : won(p.price) + '원') + '</b>' +
     (!priceMissing ? '<button class="detail-inline-link" data-a="openEditPrice">가격 수정 제보</button>' : '') + '</div>' +
-    '<div><small>사용자 평점</small><b>' + (rt && Number.isFinite(Number(rt.avg_rating)) ? '★ ' + Number(rt.avg_rating).toFixed(1) : '★ 0.0') + '</b>' +
+    '<div><small>사용자 평점</small><b>' + (rt && Number.isFinite(Number(rt.avg_rating)) ? '★ ' + Number(rt.avg_rating).toFixed(1) : '<span class="detail-price-empty">평가 전</span>') + '</b>' +
     '<span class="detail-rating-count">' + (rt ? esc(rt.n || 0) + '명 평가' : '첫 평가를 남겨주세요') + '</span></div></div>' + realMeterHtml +
     '<div class="map-links-grid detail-map-links">' +
     '<a class="map-icon-btn" href="' + esc(naverUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="네이버 지도에서 열기"><span class="map-service-icon naver-symbol">N</span><span>네이버 지도</span><span class="map-external-arrow">↗</span></a>' +
@@ -1541,6 +1542,7 @@ async function openPlace(p){
 
 function openReviewComposer(focusPrice = false){
   if (!cur) return;
+  if (requireLoginFor(focusPrice ? 'price' : 'review')) return;
   const showPriceInput = !(Number(cur.price) > 0);
   sheet('<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' +
     '<div class="detail-kicker">리뷰 작성</div><h2>' + esc(cur.name) + '</h2>' +
@@ -1561,7 +1563,7 @@ function openNew(b){
 }
 
 function openLogin(returnToPlace = false){
-  sheet((returnToPlace && cur ? '<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' : '') + '<h2>로그인</h2><p class="sub">평가와 제보를 위해 로그인하세요. 닉네임은 자동으로 정해져요.</p>' +
+  sheet((returnToPlace && cur ? '<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' : '') + '<h2>로그인을 부탁드려요 🙏</h2><p class="sub nick-welcome-sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br>그런데 광고성 리뷰와 평점 조작을 막고 모두에게 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 <b>버튼 한 번이면 끝나요</b><br>따로 입력할 건 없고, 닉네임은 자동으로 정해져요</p>' +
     '<div class="btns" style="margin-top:18px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>' +
     '<p style="font-size:12px;color:var(--label-tertiary);text-align:center;margin-top:16px;line-height:1.5;">계속 진행하면 간짜장면의 <a href="javascript:void(0)" data-a="showTerms" style="color:var(--apple-blue);text-decoration:underline;">이용약관</a> 및 <a href="javascript:void(0)" data-a="showPrivacy" style="color:var(--apple-blue);text-decoration:underline;">개인정보처리방침</a>에 동의하게 됩니다.</p>');
 }
@@ -1852,9 +1854,11 @@ const A = {
   },
   focusPrice: () => openReviewComposer(true),
   openReviewComposer: () => openReviewComposer(),
-  backToPlace: () => { if (cur) openPlace(cur); },
+  backToPlace: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} if (cur) openPlace(cur); },
+  welcomeDone: () => { closeSheet(); resumePending(); },
   openEditPrice: () => {
     if (!cur) return;
+    if (requireLoginFor('editPrice')) return;
     sheet('<h2>간짜장 가격 수정 제보</h2><p class="sub">' + esc(cur.name) + '의 현재 등록 가격은 ' + won(cur.price) + '원입니다.</p>' +
       '<div class="price-input-card" style="margin-top:16px;">' +
         '<label>변경될 실제 간짜장 가격</label>' +
@@ -1882,7 +1886,7 @@ const A = {
     openPlace(cur);
   },
   confirmPrice: async (d) => {
-    if (needLogin()) return;
+    if (requireLoginFor('place')) return;
     const pVal = parseInt(d.price, 10);
     if (!(pVal > 0) || !cur || Number(cur.proposed_price) !== pVal) return;
 
@@ -1907,7 +1911,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.067</div>' +
+        '<div><b>버전 정보</b>: v0.068</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -1930,6 +1934,7 @@ const A = {
   },
   reportPlace: () => {
     if (!cur) return;
+    if (requireLoginFor('report')) return;
     sheet('<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button><h2>정보 오류 · 개선 제보</h2><p class="sub">' + esc(cur.name) + '의 수정이 필요한 내용을 선택해주세요.</p>' +
       '<div class="report-group">' +
         '<label class="report-opt"><input type="radio" name="rpt" value="closed" checked> 폐업한 가게예요</label>' +
@@ -2126,13 +2131,41 @@ document.addEventListener('click', e => {
   }
 });
 
+/* v0.068: 로그인이 필요한 버튼은 먼저 로그인. 로그인 후 돌아오면 하던 화면을 다시 열어 줌 */
+const PENDING_KEY = 'mygjj_pending_action';
+let profileChecked = false;
+function requireLoginFor(action){
+  if (me) return false;
+  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ placeId: cur?.id ?? null, action, at: Date.now() })); } catch (e) {}
+  openLogin(true);
+  return true;
+}
+function resumePending(){
+  if (!me || !profileChecked || !places.length) return;
+  let job = null;
+  try { job = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null'); } catch (e) {}
+  if (!job) return;
+  try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+  if (Date.now() - (job.at || 0) > 30 * 60 * 1000) return; // 30분 지난 요청은 버림
+  const p = places.find(x => String(x.id) === String(job.placeId));
+  if (!p) return;
+  cur = p;
+  if (job.action === 'review') openReviewComposer();
+  else if (job.action === 'price') openReviewComposer(true);
+  else if (job.action === 'editPrice') A.openEditPrice();
+  else if (job.action === 'report') A.reportPlace();
+  else openPlace(p);
+  toast('로그인됐어요. 하던 작업을 이어서 할게요');
+}
+
 /* v0.056: 가입 후 첫 로그인 때 자동 배정된 닉네임 안내 팝업 (한 번만 표시) */
 let nicknameWelcomeShown = false;
 async function checkUserProfile(user){
   if (!user || nicknameWelcomeShown) return;
   const { data, error } = await db.from('profiles').select('username,nickname_changes,nickname_welcomed').eq('id', user.id).maybeSingle();
-  if (error || !data || data.nickname_welcomed) return;
+  if (error || !data || data.nickname_welcomed) { profileChecked = true; resumePending(); return; }
   nicknameWelcomeShown = true;
+  profileChecked = true;
   db.rpc('ack_nickname_welcome').then(({ error: e }) => { if (e) console.warn('닉네임 안내 기록 실패:', e); });
   openNicknameWelcome(data.username, Math.max(0, 3 - Number(data.nickname_changes || 0)));
 }
@@ -2140,7 +2173,7 @@ function openNicknameWelcome(username, left){
   sheet('<div class="detail-kicker">가입을 환영해요</div><h2>당신의 닉네임은<br><span class="nick-welcome-name" id="nick-welcome-name">@' + esc(username || '') + '</span> <span class="nick-welcome-tail">입니다</span></h2>' +
     '<p class="sub nick-welcome-sub">닉네임이 마음에 안 든다면 다시 뽑을 수 있어요<br>다시 뽑기는 <b>총 3회</b> 가능하고, 이전 닉네임은 다시 쓸 수 없어요</p>' +
     '<div class="btns"><button class="btn" id="nick-welcome-reroll" data-a="welcomeReroll"' + (left > 0 ? '' : ' disabled') + '>🎲 다시 뽑기 (남은 횟수 <span id="nick-welcome-left">' + left + '</span>/3)</button>' +
-    '<button class="btn primary" data-a="close">이 닉네임으로 할게요</button></div>' +
+    '<button class="btn primary" data-a="welcomeDone">이 닉네임으로 할게요</button></div>' +
     '<p class="sub" style="margin-top:12px;font-size:12px;">남은 횟수는 나중에 내 정보에서도 쓸 수 있어요</p>');
 }
 
