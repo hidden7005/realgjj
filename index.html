@@ -455,6 +455,14 @@ input {
 .rv-photo-wrap { margin-top: 8px; border-radius: 12px; overflow: hidden; max-height: 220px; }
 .rv-photo { width: 100%; max-height: 220px; object-fit: cover; }
 
+/* v0.069: 가운데 팝업 (로그인 안내용) */
+#modal { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:16px; }
+#modal[hidden] { display:none; }
+#modal .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
+#modal .modal-card { position:relative; width:100%; max-width:400px; max-height:90vh; overflow-y:auto; background:var(--card-bg); border-radius:22px; padding:28px 22px 22px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+#modal .modal-x { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; background:var(--secondary-card-bg); color:var(--label-secondary); font-size:15px; }
+#modal h2 { margin:0 28px 10px 0; font-size:22px; line-height:1.35; color:var(--label-primary); word-break:keep-all; }
+#modal .sub { margin:0; font-size:14.5px; line-height:1.65; color:var(--label-secondary); word-break:keep-all; }
 #toast {
   position: fixed; z-index: 9999; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 116px);
   transform: translateX(-50%);
@@ -850,7 +858,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.068</div>
+<div id="ver-badge">v0.069</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -869,7 +877,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.068</div>
+  <div class="nav-foot">MYGJJ · v0.069</div>
 </nav>
 
 <div id="top-container">
@@ -893,6 +901,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 <div id="popover-menu" class="glass filter-popover" hidden></div>
 <div id="res" class="glass" hidden></div>
 <div id="toast" hidden></div>
+<div id="modal" hidden><div class="modal-backdrop" data-a="closeModal"></div><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-x" type="button" data-a="closeModal" aria-label="닫기">✕</button><div id="modal-body"></div></div></div>
 <section id="sheet" aria-live="polite"></section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1563,10 +1572,12 @@ function openNew(b){
 }
 
 function openLogin(returnToPlace = false){
-  sheet((returnToPlace && cur ? '<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' : '') + '<h2>로그인을 부탁드려요 🙏</h2><p class="sub nick-welcome-sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br>그런데 광고성 리뷰와 평점 조작을 막고 모두에게 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 <b>버튼 한 번이면 끝나요</b><br>따로 입력할 건 없고, 닉네임은 자동으로 정해져요</p>' +
+  openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br>그런데 광고성 리뷰와 평점 조작을 막고 모두에게 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 <b>버튼 한 번이면 끝나요</b><br>따로 입력할 건 없고, 닉네임은 자동으로 정해져요</p>' +
     '<div class="btns" style="margin-top:18px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>' +
     '<p style="font-size:12px;color:var(--label-tertiary);text-align:center;margin-top:16px;line-height:1.5;">계속 진행하면 간짜장면의 <a href="javascript:void(0)" data-a="showTerms" style="color:var(--apple-blue);text-decoration:underline;">이용약관</a> 및 <a href="javascript:void(0)" data-a="showPrivacy" style="color:var(--apple-blue);text-decoration:underline;">개인정보처리방침</a>에 동의하게 됩니다.</p>');
 }
+function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; }
+function closeModal(){ $('modal').hidden = true; $('modal-body').innerHTML = ''; }
 
 // 리뷰 작성자 통계는 전체 리뷰(모든 식당)에서 계산합니다.
 const reviewerStatsCache = new Map();
@@ -1854,6 +1865,7 @@ const A = {
   },
   focusPrice: () => openReviewComposer(true),
   openReviewComposer: () => openReviewComposer(),
+  closeModal: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} closeModal(); },
   backToPlace: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} if (cur) openPlace(cur); },
   welcomeDone: () => { closeSheet(); resumePending(); },
   openEditPrice: () => {
@@ -1911,7 +1923,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.068</div>' +
+        '<div><b>버전 정보</b>: v0.069</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -1958,6 +1970,7 @@ const A = {
     closeSheet();
   },
   showTerms: () => {
+    closeModal();
     sheet('<h2>서비스 이용약관</h2>' +
       '<div style="margin-top:14px;font-size:14px;line-height:1.6;color:var(--label-secondary);max-height:60vh;overflow-y:auto;">' +
       '<p><b>제 1 조 (목적)</b><br>본 약관은 ‘간짜장면’ 서비스의 이용 조건 및 절차에 관한 제반 사항을 규정함을 목적으로 합니다.</p><br>' +
@@ -1967,6 +1980,7 @@ const A = {
       '</div>');
   },
   showPrivacy: () => {
+    closeModal();
     sheet('<h2>개인정보처리방침</h2>' +
       '<div style="margin-top:14px;font-size:14px;line-height:1.6;color:var(--label-secondary);max-height:60vh;overflow-y:auto;">' +
       '<p><b>1. 수집하는 개인정보</b><br>- 소셜 로그인 정보(이메일, 고유 식별자, 닉네임, 프로필 사진)</p><br>' +
