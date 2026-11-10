@@ -554,6 +554,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #sheet .star-btn { width:30px;height:36px; }
 .price-compare-row { flex-wrap:wrap;gap:8px;line-height:1.5; }
 .btn-verify-price { height:auto;min-height:42px;padding:9px 12px;text-align:center;line-height:1.4; }
+.nav-link[hidden] { display:none !important; }
+.admin-count:not(:empty) { display:inline-block; min-width:20px; padding:1px 7px; margin-left:4px; border-radius:999px; background:#ff3b30; color:#fff; font-size:12px; text-align:center; }
+.adm-tabs { display:flex; gap:6px; overflow-x:auto; margin:14px 0 10px; padding-bottom:4px; }
+.adm-tab { flex-shrink:0; padding:7px 12px; border-radius:999px; font-size:13px; font-weight:650; background:var(--secondary-card-bg); color:var(--label-secondary); border:0.5px solid var(--separator); }
+.adm-tab.on { background:var(--label-primary); color:var(--card-bg); }
+.adm-status { display:flex; gap:6px; margin-bottom:10px; }
+.adm-card { border:0.5px solid var(--separator); border-radius:14px; padding:14px; margin-bottom:10px; background:var(--card-bg); }
+.adm-card h4 { margin:0 0 4px; font-size:15px; color:var(--label-primary); }
+.adm-meta { font-size:12px; color:var(--label-secondary); margin-bottom:6px; }
+.adm-body { font-size:13.5px; line-height:1.55; color:var(--label-primary); white-space:pre-wrap; word-break:break-word; }
+.adm-quote { margin-top:8px; padding:10px; border-radius:10px; background:var(--secondary-card-bg); font-size:13px; }
+.adm-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.adm-btns button { padding:7px 11px; border-radius:9px; font-size:13px; font-weight:650; background:var(--secondary-card-bg); color:var(--label-primary); border:0.5px solid var(--separator); }
+.adm-btns .danger { color:#ff3b30; }
+.adm-btns .ok { background:var(--apple-blue); color:#fff; border-color:transparent; }
 .nav-link { display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:center;min-height:48px; }
 .nav-icon { width:24px;display:flex;align-items:center;justify-content:center; }
 .nav-section-title { margin-left:12px; }
@@ -864,7 +879,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.070</div>
+<div id="ver-badge">v0.071</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -877,13 +892,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-section-title">서비스</div>
   <button class="nav-link" type="button" data-a="showAppInfo"><span class="nav-icon">ℹ️</span>서비스 소개</button>
   <button class="nav-link" type="button" data-a="navStoreRequest"><span class="nav-icon">🍜</span>식당 등록 요청</button>
+  <button class="nav-link" type="button" id="nav-admin" data-a="openAdmin" hidden><span class="nav-icon">🛠</span><span>관리자 <b id="admin-count" class="admin-count"></b></span></button>
   <div class="nav-section-title">고객지원</div>
   <button class="nav-link" type="button" data-a="navContact" data-type="report"><span class="nav-icon">🚩</span>문의 · 오류·문제 신고</button>
   <button class="nav-link" type="button" data-a="navContact" data-type="partner"><span class="nav-icon">🤝</span>제휴·광고 문의</button>
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.070</div>
+  <div class="nav-foot">진짜간짜장 · v0.071</div>
 </nav>
 
 <div id="top-container">
@@ -923,6 +939,7 @@ let searchSeq = 0, nearbySeq = 0, currentPreviewUrl = null;
 let currentSort = 'default';
 let filterRating = 'all';
 let filterRealOnly = false;
+let hiddenPlaces = [], isAdmin = false;
 /* v0.060: '진짜 간짜장'(투표 인증) 기능은 잠시 숨김. true로 바꾸면 다시 보임 */
 const SHOW_REAL = false;
 /* v0.061: '간짜장' 버튼 — 기본으로 켜짐.
@@ -1116,7 +1133,8 @@ async function load(){
       fetchAll('place_real_stats', 'place_id,total,yes', 'place_id')
     ]);
     rate = {}; rt.forEach(x => rate[x.place_id] = x);
-    places = pl;
+    places = pl.filter(p => !p.hidden);
+    hiddenPlaces = pl.filter(p => p.hidden); // v0.071: 관리자에게만 내려옴
     realStats = {}; rs.forEach(x => realStats[x.place_id] = { total: Number(x.total), yes: Number(x.yes) });
     drawPins();
     updatePillLabels();
@@ -1709,6 +1727,51 @@ function navContact(type){
 const A = {
   openNearbyBiz:d=>{ const b=biz[d.id]; if(b?._place) openPlace(b._place); else if(b) openNew(b); else toast('식당 정보를 다시 조회해주세요'); },
   closeNav:()=>toggleNav(false),
+  openAdmin: () => { toggleNav(false); openAdmin(); },
+  admTab: d => { admTab = d.k; openAdmin(); },
+  admStatus: d => { admStatus = d.s; openAdmin(); },
+  admSetStatus: async d => { if (await admMark(+d.i, d.s)) { toast(d.s === 'new' ? '미처리로 되돌렸어요' : d.s === 'rejected' ? '반려했어요' : '처리 완료했어요'); openAdmin(); } },
+  admGoPlace: d => { const p = places.find(x => String(x.id) === String(d.id)) || hiddenPlaces.find(x => String(x.id) === String(d.id)); if (p) openPlace(p); else toast('가게를 찾지 못했어요'); },
+  admHide: async d => {
+    const r = admRows[+d.i]; const pid = r && admRef(r, 'place'); if (!pid) return;
+    if (!confirm('이 가게를 지도에서 숨길까요?\n(숨긴 가게 탭에서 다시 보이게 할 수 있어요)')) return;
+    const { error } = await db.rpc('admin_set_place_hidden', { p_place: pid, p_hidden: true });
+    if (error) { toast('실패: ' + error.message); return; }
+    await admMark(+d.i, 'done'); await load(); toast('가게를 숨겼어요'); openAdmin();
+  },
+  admUnhide: async d => {
+    const { error } = await db.rpc('admin_set_place_hidden', { p_place: d.id, p_hidden: false });
+    if (error) { toast('실패: ' + error.message); return; }
+    await load(); toast('다시 보이게 했어요'); openAdmin();
+  },
+  admDeleteReview: async d => {
+    const r = admRows[+d.i]; const rid = r && admRef(r, 'review'); if (!rid) return;
+    if (!confirm('이 리뷰를 삭제할까요?\n삭제한 리뷰는 되돌릴 수 없어요')) return;
+    const { data: photo, error } = await db.rpc('admin_delete_review', { p_review: rid });
+    if (error) { toast('실패: ' + error.message); return; }
+    const m = (photo || '').match(/\/review-images\/(.+)$/);
+    if (m) { try { await db.storage.from('review-images').remove([decodeURIComponent(m[1].split('?')[0])]); } catch (e) {} }
+    await admMark(+d.i, 'done'); await load(); toast('리뷰를 삭제했어요'); openAdmin();
+  },
+  admFindBiz: async d => {
+    const r = admRows[+d.i]; if (!r) return;
+    const nm = (r.payload?.name || (r.name || '').replace(/^\[[^\]]*\]\s*/, '')).replace(/\s*[(\[（][^)\]）]*[)\]）]\s*/g, ' ').trim();
+    const box = $('adm-extra-' + d.i); if (!box) return;
+    box.innerHTML = '<p class="adm-meta">공공데이터에서 찾는 중…</p>';
+    const { data } = await db.from('biz_master').select('id,name,branch,road_addr,lot_addr,lat,lng').ilike('name', '%' + nm.split(' ')[0] + '%').limit(40);
+    const region = (r.address || '').split(/\s+/).slice(0, 2).join(' ').replace('서울 ', '서울특별시 ').replace('부산 ', '부산광역시 ');
+    const list = (data || []).sort((a, b) => ((b.road_addr || '').includes(region.split(' ')[1] || '#') ? 1 : 0) - ((a.road_addr || '').includes(region.split(' ')[1] || '#') ? 1 : 0)).slice(0, 12);
+    window.__admBiz = list;
+    box.innerHTML = list.length ? '<div class="adm-quote">맞는 가게를 고르세요' + list.map((b, j) => '<div style="margin-top:8px"><b>' + esc(b.name + (b.branch ? ' ' + b.branch : '')) + '</b><br><span class="adm-meta">' + esc(b.road_addr || b.lot_addr || '') + '</span><div class="adm-btns" style="margin-top:4px"><button class="ok" data-a="admAddBiz" data-i="' + d.i + '" data-j="' + j + '">이 가게로 추가</button></div></div>').join('') + '</div>'
+      : '<div class="adm-quote">공공데이터에서 찾지 못했어요. 좌표가 필요하니 대화창에서 Claude에게 요청해 주세요</div>';
+  },
+  admAddBiz: async d => {
+    const r = admRows[+d.i], b = (window.__admBiz || [])[+d.j]; if (!r || !b) return;
+    const nm = (r.payload?.name || (r.name || '').replace(/^\[[^\]]*\]\s*/, '')).trim();
+    const { error } = await db.rpc('admin_add_place', { p_name: nm, p_address: b.road_addr || b.lot_addr || r.address, p_lat: Number(b.lat), p_lng: Number(b.lng), p_biz: b.id });
+    if (error) { toast('추가 실패: ' + error.message); return; }
+    await admMark(+d.i, 'done'); await load(); toast(nm + ' 후보에 추가했어요'); openAdmin();
+  },
   /* v0.064: 메뉴 > 식당 등록 요청 (비로그인도 가능, store_requests에 '[등록 요청]'으로 저장) */
   navStoreRequest:()=>{
     toggleNav(false);
@@ -1743,6 +1806,8 @@ const A = {
     if (btn?.disabled) return;
     if (btn) btn.disabled = true;
     const { error } = await db.from('store_requests').insert({
+      kind: 'register',
+      payload: { name, address: addr, price: price ? Number(price) : null, is_real: scores.is_real, taste: scores.taste, price_score: scores.price, kind_score: scores.kind, memo, contact },
       name: '[등록 요청] ' + name,
       address: addr,
       note: ['진짜 간짜장: ' + (scores.is_real ? '네' : '아니요(미달)'), '맛 ' + scores.taste + ' · 가격 ' + scores.price + ' · 친절 ' + scores.kind + ' · 종합 ' + total, '간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
@@ -1861,6 +1926,7 @@ const A = {
     if (button) button.disabled = true;
     try {
       const {error} = await db.from('store_requests').insert({
+        kind: 'review_report', ref_review: d.id, ref_place: cur.id, payload: { reason, note },
         name: '[리뷰 신고] ' + cur.name,
         address: cur.address || null,
         note: '리뷰ID: ' + d.id + ' / 식당ID: ' + cur.id + ' / 신고자ID: ' + me.id + ' / 사유: ' + reason + ' / 내용: ' + note
@@ -1929,7 +1995,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.070</div>' +
+        '<div><b>버전 정보</b>: v0.071</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -1967,6 +2033,7 @@ const A = {
     const rptType = document.querySelector('input[name="rpt"]:checked')?.value || 'etc';
     const note = $('rpt-note')?.value.trim() || '';
     const { error } = await db.from('store_requests').insert({
+      kind: 'place_report', ref_place: cur.id, payload: { type: rptType, note },
       name: `[제보: ${rptType}] ${cur.name}`,
       address: cur.address || null,
       note: note || `매장ID: ${cur.id}`
@@ -2151,6 +2218,81 @@ document.addEventListener('click', e => {
   }
 });
 
+/* v0.071: 관리자 화면 — 요청·신고·제보 확인과 처리 (권한은 DB의 is_admin으로 검사) */
+const ADM_TABS = [['register','🍜 등록 요청'],['review_report','🚩 리뷰 신고'],['place_report','🏪 매장 제보'],['inquiry','💬 문의'],['hidden','🙈 숨긴 가게']];
+const RPT_LABEL = { closed:'폐업했어요', info:'주소·상호가 달라요', etc:'기타 오류' };
+let admTab = 'register', admStatus = 'new', admRows = [];
+function setAdmin(v){
+  isAdmin = !!v;
+  const n = $('nav-admin'); if (n) n.hidden = !isAdmin;
+  if (isAdmin) refreshAdminCount(); else if ($('admin-count')) $('admin-count').textContent = '';
+}
+async function refreshAdminCount(){
+  if (!isAdmin) return;
+  const { count } = await db.from('store_requests').select('id', { count: 'exact', head: true }).eq('status', 'new');
+  if ($('admin-count')) $('admin-count').textContent = count ? String(count) : '';
+}
+function admRef(r, key){
+  if (key === 'review') return r.ref_review || (r.note || '').match(/리뷰ID: ([0-9a-f-]{36})/)?.[1] || null;
+  return r.ref_place || (r.note || '').match(/(?:식당|매장)ID: ([0-9a-f-]{36})/)?.[1] || null;
+}
+async function openAdmin(){
+  if (!isAdmin) return;
+  sheet('<div class="detail-kicker">진짜간짜장 관리자</div><h2>요청 · 신고 관리</h2>' +
+    '<div class="adm-tabs">' + ADM_TABS.map(([k, l]) => '<button class="adm-tab' + (k === admTab ? ' on' : '') + '" data-a="admTab" data-k="' + k + '">' + l + '</button>').join('') + '</div>' +
+    (admTab === 'hidden' ? '' : '<div class="adm-status"><button class="adm-tab' + (admStatus === 'new' ? ' on' : '') + '" data-a="admStatus" data-s="new">미처리</button><button class="adm-tab' + (admStatus === 'done' ? ' on' : '') + '" data-a="admStatus" data-s="done">처리됨</button></div>') +
+    '<div id="adm-list"><p class="detail-empty">불러오는 중…</p></div>', { fullscreen: true });
+  const box = $('adm-list');
+  if (admTab === 'hidden') {
+    box.innerHTML = hiddenPlaces.length ? hiddenPlaces.map(p => '<div class="adm-card"><h4>' + esc(p.name) + '</h4><div class="adm-meta">' + esc(p.address || '') + '</div>' +
+      '<div class="adm-btns"><button class="ok" data-a="admUnhide" data-id="' + esc(p.id) + '">다시 보이기</button></div></div>').join('') : '<p class="detail-empty">숨긴 가게가 없어요</p>';
+    return;
+  }
+  let qy = db.from('store_requests').select('*').eq('kind', admTab).order('created_at', { ascending: false }).limit(100);
+  qy = admStatus === 'new' ? qy.eq('status', 'new') : qy.neq('status', 'new');
+  const { data, error } = await qy;
+  if (error) { box.innerHTML = '<p class="detail-empty">불러오지 못했어요: ' + esc(error.message) + '</p>'; return; }
+  admRows = data || [];
+  if (!admRows.length) { box.innerHTML = '<p class="detail-empty">' + (admStatus === 'new' ? '처리할 항목이 없어요 👍' : '처리한 항목이 없어요') + '</p>'; return; }
+  let reviews = {};
+  if (admTab === 'review_report') {
+    const ids = [...new Set(admRows.map(r => admRef(r, 'review')).filter(Boolean))];
+    if (ids.length) { const { data: rv } = await db.from('reviews').select('id,rating,comment,photo_url,user_id,profiles(username)').in('id', ids); (rv || []).forEach(x => reviews[x.id] = x); }
+  }
+  box.innerHTML = admRows.map((r, i) => {
+    const when = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+    const title = esc((r.name || '').replace(/^\[[^\]]*\]\s*/, ''));
+    const done = r.status !== 'new' ? ' · ' + (r.status === 'rejected' ? '반려' : '처리 완료') : '';
+    let body = '', btns = '';
+    const pl = r.payload || {};
+    if (admTab === 'register') {
+      body = '<div class="adm-body">' + esc(r.address || '') + (r.note ? '\n' + esc(r.note) : '') + '</div>';
+      btns = '<button class="ok" data-a="admFindBiz" data-i="' + i + '">후보에 추가</button><button data-a="admSetStatus" data-i="' + i + '" data-s="rejected">반려</button>';
+    } else if (admTab === 'review_report') {
+      const rid = admRef(r, 'review'), rv = rid && reviews[rid];
+      body = '<div class="adm-body">사유: ' + esc(pl.reason || (r.note || '').match(/사유: ([^/]*)/)?.[1] || '') + (pl.note ? '\n' + esc(pl.note) : '') + '</div>' +
+        (rv ? '<div class="adm-quote">@' + esc(rv.profiles?.username || '탈퇴한 회원') + ' · ★ ' + Number(rv.rating || 0).toFixed(1) + (rv.comment ? '<br>' + esc(rv.comment) : '') + (rv.photo_url ? '<br><a href="' + esc(rv.photo_url) + '" target="_blank" rel="noopener">사진 보기</a>' : '') + '</div>' : '<div class="adm-quote">이미 삭제된 리뷰예요</div>');
+      btns = (rv ? '<button class="danger" data-a="admDeleteReview" data-i="' + i + '">리뷰 삭제</button>' : '') + '<button data-a="admSetStatus" data-i="' + i + '" data-s="done">문제없음</button>';
+    } else if (admTab === 'place_report') {
+      const pid = admRef(r, 'place');
+      body = '<div class="adm-body">' + esc(RPT_LABEL[pl.type] || (r.name || '').match(/\[제보: ([^\]]*)\]/)?.[1] || '') + (r.note ? '\n' + esc(r.note) : '') + '</div>';
+      btns = (pid ? '<button data-a="admGoPlace" data-id="' + esc(pid) + '">가게 보기</button><button class="danger" data-a="admHide" data-i="' + i + '">가게 숨기기</button>' : '') + '<button data-a="admSetStatus" data-i="' + i + '" data-s="done">처리 완료</button>';
+    } else {
+      body = '<div class="adm-body">' + esc(r.note || '') + '</div>';
+      btns = '<button data-a="admSetStatus" data-i="' + i + '" data-s="done">처리 완료</button>';
+    }
+    if (r.status !== 'new') btns = '<button data-a="admSetStatus" data-i="' + i + '" data-s="new">미처리로 되돌리기</button>';
+    return '<div class="adm-card"><h4>' + title + '</h4><div class="adm-meta">' + esc(when) + done + '</div>' + body + '<div class="adm-btns">' + btns + '</div><div id="adm-extra-' + i + '"></div></div>';
+  }).join('');
+}
+async function admMark(i, status){
+  const r = admRows[i]; if (!r) return false;
+  const { error } = await db.from('store_requests').update({ status, handled_at: status === 'new' ? null : new Date().toISOString(), handled_by: status === 'new' ? null : me?.id }).eq('id', r.id);
+  if (error) { toast('처리 실패: ' + error.message); return false; }
+  refreshAdminCount();
+  return true;
+}
+
 /* v0.068: 로그인이 필요한 버튼은 먼저 로그인. 로그인 후 돌아오면 하던 화면을 다시 열어 줌 */
 const PENDING_KEY = 'mygjj_pending_action';
 let profileChecked = false;
@@ -2182,7 +2324,8 @@ function resumePending(){
 let nicknameWelcomeShown = false;
 async function checkUserProfile(user){
   if (!user || nicknameWelcomeShown) return;
-  const { data, error } = await db.from('profiles').select('username,nickname_changes,nickname_welcomed').eq('id', user.id).maybeSingle();
+  const { data, error } = await db.from('profiles').select('username,nickname_changes,nickname_welcomed,is_admin').eq('id', user.id).maybeSingle();
+  setAdmin(!!data?.is_admin);
   if (error || !data || data.nickname_welcomed) { profileChecked = true; resumePending(); return; }
   nicknameWelcomeShown = true;
   profileChecked = true;
@@ -2223,7 +2366,7 @@ db.auth.onAuthStateChange((_e, s) => {
   paintMe();
   if (me) checkUserProfile(me);
 });
-function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; }
+function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; if (!me) setAdmin(false); }
 
 let userLocationMarker = null;
 let locating = false;
