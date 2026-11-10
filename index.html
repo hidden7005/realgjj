@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MYGJJ</title>
+<title>진짜간짜장 · 진짜 간짜장 지도</title>
+<meta name="description" content="전국 진짜 간짜장 후보 지도. 평점과 가격, 리뷰로 진짜 간짜장을 함께 가려내요">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="진짜간짜장">
+<meta property="og:title" content="진짜간짜장 · 진짜 간짜장 지도">
+<meta property="og:description" content="전국 진짜 간짜장 후보 지도. 평점과 가격, 리뷰로 진짜 간짜장을 함께 가려내요">
+<meta property="og:url" content="https://hidden7005.github.io/realgjj/">
 <style>
 :root {
   --system-bg: #f2f2f7;
@@ -91,7 +97,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 
 #top { display: flex; align-items: center; gap: 6px; width: 100%; }
 
-/* 브랜드 로고 버튼 (간짜장면) */
+/* 브랜드 로고 버튼 (진짜간짜장) */
 .brand-btn {
   height: 46px;
   padding: 0 10px;
@@ -505,7 +511,7 @@ input {
   }
 }
 
-/* MYGJJ navigation drawer */
+/* 진짜간짜장 navigation drawer */
 .nav-toggle{width:46px;height:46px;flex-shrink:0;border-radius:14px;display:grid;place-items:center;font-size:23px;line-height:1}
 #nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:19;opacity:0;visibility:hidden;transition:opacity .23s,visibility .23s}
 #nav-drawer{position:fixed;top:0;bottom:0;left:0;width:min(320px,86vw);z-index:20;background:var(--card-bg);box-shadow:8px 0 36px rgba(0,0,0,.18);transform:translateX(-105%);transition:transform .25s ease;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 22px) 18px calc(env(safe-area-inset-bottom,0px) + 22px)}
@@ -858,14 +864,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.069</div>
+<div id="ver-badge">v0.070</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
 
 <div id="nav-backdrop" aria-hidden="true"></div>
 <nav id="nav-drawer" aria-label="전체 메뉴" aria-hidden="true">
-  <div class="nav-head"><strong>🍜 간짜장면</strong><button class="nav-close" type="button" data-a="closeNav" aria-label="메뉴 닫기">✕</button></div>
+  <div class="nav-head"><strong>🍜 진짜간짜장</strong><button class="nav-close" type="button" data-a="closeNav" aria-label="메뉴 닫기">✕</button></div>
   <button class="nav-link" type="button" data-a="navAccount"><span class="nav-icon">👤</span><span id="nav-account-label">로그인 / 회원가입</span></button>
   <div class="nav-sep"></div>
   <div class="nav-section-title">서비스</div>
@@ -877,7 +883,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">MYGJJ · v0.069</div>
+  <div class="nav-foot">진짜간짜장 · v0.070</div>
 </nav>
 
 <div id="top-container">
@@ -885,7 +891,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
     <button id="nav-toggle" class="glass nav-toggle" type="button" aria-label="전체 메뉴 열기" aria-controls="nav-drawer" aria-expanded="false"><span aria-hidden="true">☰</span><span class="nav-toggle-label">메뉴</span></button>
     <button id="brand-logo" class="glass brand-btn" data-a="refresh" title="지도를 새로고침합니다">
       <span style="font-size:17px;">🍜</span>
-      <span>간짜장<span class="brand-point">면</span></span>
+      <span>진짜<span class="brand-point">간짜장</span></span>
     </button>
     <input id="q" class="glass" type="search" placeholder="가게 이름 검색" autocomplete="off">
   </div>
@@ -1529,7 +1535,7 @@ async function openPlace(p){
       '<div class="review-score">' + badge + ' <strong>★ ' + Number(r.rating || 0).toFixed(1) + '</strong></div>' +
       (r.comment ? '<div class="review-comment">' + esc(r.comment) + '</div>' : '') + photo + '</article>';
   }).join('') : '<p class="detail-empty">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요.</p>';
-  sheet('<div class="detail-kicker">MYGJJ · 식당 정보</div><h2>' + esc(p.name) + '</h2>' + authHeader +
+  sheet('<div class="detail-kicker">진짜간짜장 · 식당 정보</div><h2>' + esc(p.name) + '</h2>' + authHeader +
     '<p class="sub detail-address">' + esc(addr || '주소 정보가 없습니다') + '</p>' +
     '<div class="stats"><div><small>간짜장 가격</small><b>' + (priceMissing ? '<span class="detail-price-empty">미등록</span>' : won(p.price) + '원') + '</b>' +
     (!priceMissing ? '<button class="detail-inline-link" data-a="openEditPrice">가격 수정 제보</button>' : '') + '</div>' +
@@ -1574,7 +1580,7 @@ function openNew(b){
 function openLogin(returnToPlace = false){
   openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br><br>그런데 광고성 리뷰와 평점 조작을 막고 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 버튼 한 번이면 끝나요</p>' +
     '<div class="btns" style="margin-top:18px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>' +
-    '<p style="font-size:12px;color:var(--label-tertiary);text-align:center;margin-top:16px;line-height:1.5;">계속 진행하면 간짜장면의 <a href="javascript:void(0)" data-a="showTerms" style="color:var(--apple-blue);text-decoration:underline;">이용약관</a> 및 <a href="javascript:void(0)" data-a="showPrivacy" style="color:var(--apple-blue);text-decoration:underline;">개인정보처리방침</a>에 동의하게 됩니다.</p>');
+    '<p style="font-size:12px;color:var(--label-tertiary);text-align:center;margin-top:16px;line-height:1.5;">계속 진행하면 진짜간짜장의 <a href="javascript:void(0)" data-a="showTerms" style="color:var(--apple-blue);text-decoration:underline;">이용약관</a> 및 <a href="javascript:void(0)" data-a="showPrivacy" style="color:var(--apple-blue);text-decoration:underline;">개인정보처리방침</a>에 동의하게 됩니다.</p>');
 }
 function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; }
 function closeModal(){ $('modal').hidden = true; $('modal-body').innerHTML = ''; }
@@ -1688,7 +1694,7 @@ function navContact(type){
   // 일반 문의와 서비스 오류 신고는 하나의 창으로 받습니다.
   if (type === 'partner') {
     sheet('<h2>제휴·광고 문의</h2><p class="sub">식당 제휴, 광고 및 협업은 이메일로 문의해 주세요.</p>' +
-      '<a class="btn primary" style="margin-top:20px" href="mailto:hidden7005@gmail.com?subject=MYGJJ%20%EC%A0%9C%ED%9C%B4%C2%B7%EA%B4%91%EA%B3%A0%20%EB%AC%B8%EC%9D%98">hidden7005@gmail.com</a>' +
+      '<a class="btn primary" style="margin-top:20px" href="mailto:hidden7005@gmail.com?subject=%EC%A7%84%EC%A7%9C%EA%B0%84%EC%A7%9C%EC%9E%A5%20%EC%A0%9C%ED%9C%B4%C2%B7%EA%B4%91%EA%B3%A0%20%EB%AC%B8%EC%9D%98">hidden7005@gmail.com</a>' +
       '<p class="nav-form-note">이메일 주소를 누르면 기기의 메일 앱이 열립니다.</p>');
     return;
   }
@@ -1770,7 +1776,7 @@ const A = {
   sharePlace: async () => {
     if (!cur) return;
     const url = placeShareUrl(cur);
-    const title = '간짜장면 · ' + cur.name;
+    const title = '진짜간짜장 · ' + cur.name;
     const text = cur.name + (cur.address ? ' (' + cur.address + ')' : '') + ' 간짜장 정보';
     if (navigator.share) {
       try { await navigator.share({ title, text, url }); return; }
@@ -1918,12 +1924,12 @@ const A = {
     openPlace(cur);
   },
   showAppInfo: () => {
-    sheet('<h2>🍜 간짜장면 (MYGJJ)</h2>' +
+    sheet('<h2>🍜 진짜간짜장</h2>' +
       '<p class="sub">전국 간짜장 매니아를 위한 집단지성 지도</p>' +
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.069</div>' +
+        '<div><b>버전 정보</b>: v0.070</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -1973,7 +1979,7 @@ const A = {
     closeModal();
     sheet('<h2>서비스 이용약관</h2>' +
       '<div style="margin-top:14px;font-size:14px;line-height:1.6;color:var(--label-secondary);max-height:60vh;overflow-y:auto;">' +
-      '<p><b>제 1 조 (목적)</b><br>본 약관은 ‘간짜장면’ 서비스의 이용 조건 및 절차에 관한 제반 사항을 규정함을 목적으로 합니다.</p><br>' +
+      '<p><b>제 1 조 (목적)</b><br>본 약관은 ‘진짜간짜장’ 서비스의 이용 조건 및 절차에 관한 제반 사항을 규정함을 목적으로 합니다.</p><br>' +
       '<p><b>제 2 조 (게시물 관리)</b><br>1. 회원은 솔직하고 건전한 리뷰를 작성해야 합니다.<br>2. 욕설, 비방, 허위 사실 유포 시 사전 통보 없이 삭제되거나 이용이 제한될 수 있습니다.</p><br>' +
       '<p><b>제 3 조 (위치정보 이용)</b><br>주변 식당 안내를 위해 브라우저 위치 권한을 요청할 수 있습니다. 권한을 거부해도 지도 검색은 이용할 수 있습니다.</p><br>' +
       '<p><b>제 4 조 (회원 탈퇴와 게시물)</b><br>1. 회원은 언제든지 내 정보 화면에서 탈퇴할 수 있습니다.<br>2. 탈퇴하면 계정 정보(이메일, 고유 식별자, 닉네임)는 즉시 삭제됩니다.<br>3. 탈퇴 전에 작성한 리뷰, 별점, 사진은 삭제되지 않고 작성자를 알 수 없도록 <b>익명으로 처리되어 남습니다</b>. 리뷰에는 작성자 대신 ‘탈퇴한 회원’으로 표시됩니다.<br>4. 익명 처리된 게시물은 작성자를 확인할 수 없어 탈퇴 후에는 삭제를 요청할 수 없습니다. 삭제를 원하는 리뷰는 탈퇴 전에 내 정보 화면에서 직접 삭제해 주세요.</p>' +
@@ -2197,7 +2203,7 @@ function showIntro(){
   let hidden = false;
   try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
   if (hidden || SHARED_PLACE_ID || $('sheet').classList.contains('open')) return;
-  sheet('<div class="detail-kicker">간짜장면 안내</div><h2>지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
+  sheet('<div class="detail-kicker">진짜간짜장 안내</div><h2>지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
     '<p class="sub nick-welcome-sub" style="margin:22px 0 22px;">지도에 매장 이름이 표시된 곳은 진짜 간짜장 후보 리스트예요<br>' +
     '여러분이 남겨 주시는 평점에 따라 유지될 수도, 삭제될 수도 있어요<br>' +
     '드셔 보신 곳이 있다면 평점을 남겨 주세요</p>' +
