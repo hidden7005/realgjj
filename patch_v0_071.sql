@@ -96,4 +96,6 @@ grant execute on function admin_delete_review(uuid) to authenticated;
 grant execute on function admin_add_place(text, text, double precision, double precision, text) to authenticated;
 
 -- 6) 관리자 지정 (닉네임 기준)
-update profiles set is_admin = true where username = '__ADMIN_USERNAME__';
+-- 관리자: 부지런한훠궈076 → 닉네임 '진짜 간짜장' (다시 뽑기 막음)
+update profiles set is_admin = true, username = '진짜 간짜장', nickname_changes = 3, nickname_welcomed = true
+where id = '921eea94-f858-4926-b9b8-1bb2287f445d';
