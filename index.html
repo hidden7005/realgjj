@@ -568,6 +568,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .admin-count:not(:empty) { display:inline-block; min-width:20px; padding:1px 7px; margin-left:4px; border-radius:999px; background:#ff3b30; color:#fff; font-size:12px; text-align:center; }
 .about-story { margin-top:14px; font-size:15.5px; line-height:1.75; color:var(--label-primary); word-break:keep-all; }
 .about-story p { margin:0 0 16px; }
+.legal-doc { margin-top:10px; font-size:13.5px; line-height:1.7; color:var(--label-secondary); word-break:keep-all; }
+.legal-doc h3 { margin:18px 0 6px; font-size:14.5px; color:var(--label-primary); }
+.legal-doc p { margin:0; }
+.legal-doc ol { margin:0; padding-left:20px; }
+.legal-doc li { margin:3px 0; }
+.legal-doc .legal-date { font-size:12px; color:var(--label-tertiary); }
 .adm-tabs { display:flex; gap:6px; overflow-x:auto; margin:14px 0 10px; padding-bottom:4px; }
 .adm-tab { flex-shrink:0; padding:7px 12px; border-radius:999px; font-size:13px; font-weight:650; background:var(--secondary-card-bg); color:var(--label-secondary); border:0.5px solid var(--separator); }
 .adm-tab.on { background:var(--label-primary); color:var(--card-bg); }
@@ -891,7 +897,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.074</div>
+<div id="ver-badge">v0.075</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -911,7 +917,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.074</div>
+  <div class="nav-foot">진짜간짜장 · v0.075</div>
 </nav>
 
 <div id="top-container">
@@ -2013,7 +2019,7 @@ const A = {
       '<div style="margin-top:16px;background:var(--secondary-card-bg);border-radius:18px;padding:16px;border:0.5px solid var(--separator);display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;">' +
         (!SHOW_REAL ? '' : '<div><b>🔥 인증 간짜장 90% 인증제</b><br><span style="color:var(--label-secondary);font-size:13px;">기름에 갓 볶아낸 진짜 간짜장 매장만을 유저 투표(90% 이상)로 엄선합니다.</span></div>') +
         '<div><b>₩ 투명한 가격 검증</b><br><span style="color:var(--label-secondary);font-size:13px;">물가 변동 시 유저들의 가격 제보와 상호 확인으로 최신 정가를 유지합니다.</span></div>' +
-        '<div><b>버전 정보</b>: v0.074</div>' +
+        '<div><b>버전 정보</b>: v0.075</div>' +
       '</div>' +
       '<div class="btns" style="margin-top:14px"><button class="btn" data-a="navContact" data-type="report">문의 · 오류·문제 신고</button><button class="btn" data-a="navContact" data-type="partner">제휴·광고 문의: hidden7005@gmail.com</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;">' +
@@ -2062,22 +2068,11 @@ const A = {
   },
   showTerms: () => {
     closeModal();
-    sheet('<h2>서비스 이용약관</h2>' +
-      '<div style="margin-top:14px;font-size:14px;line-height:1.6;color:var(--label-secondary);max-height:60vh;overflow-y:auto;">' +
-      '<p><b>제 1 조 (목적)</b><br>본 약관은 ‘진짜간짜장’ 서비스의 이용 조건 및 절차에 관한 제반 사항을 규정함을 목적으로 합니다.</p><br>' +
-      '<p><b>제 2 조 (게시물 관리)</b><br>1. 회원은 솔직하고 건전한 리뷰를 작성해야 합니다.<br>2. 욕설, 비방, 허위 사실 유포 시 사전 통보 없이 삭제되거나 이용이 제한될 수 있습니다.</p><br>' +
-      '<p><b>제 3 조 (위치정보 이용)</b><br>주변 식당 안내를 위해 브라우저 위치 권한을 요청할 수 있습니다. 권한을 거부해도 지도 검색은 이용할 수 있습니다.</p><br>' +
-      '<p><b>제 4 조 (회원 탈퇴와 게시물)</b><br>1. 회원은 언제든지 내 정보 화면에서 탈퇴할 수 있습니다.<br>2. 탈퇴하면 계정 정보(이메일, 고유 식별자, 닉네임)는 즉시 삭제됩니다.<br>3. 탈퇴 전에 작성한 리뷰, 별점, 사진은 삭제되지 않고 작성자를 알 수 없도록 <b>익명으로 처리되어 남습니다</b>. 리뷰에는 작성자 대신 ‘탈퇴한 회원’으로 표시됩니다.<br>4. 익명 처리된 게시물은 작성자를 확인할 수 없어 탈퇴 후에는 삭제를 요청할 수 없습니다. 삭제를 원하는 리뷰는 탈퇴 전에 내 정보 화면에서 직접 삭제해 주세요.</p>' +
-      '</div>');
+    sheet('<h2>서비스 이용약관</h2>' + legalDoc(TERMS_DOC));
   },
   showPrivacy: () => {
     closeModal();
-    sheet('<h2>개인정보처리방침</h2>' +
-      '<div style="margin-top:14px;font-size:14px;line-height:1.6;color:var(--label-secondary);max-height:60vh;overflow-y:auto;">' +
-      '<p><b>1. 수집하는 개인정보</b><br>- 소셜 로그인 정보(이메일, 고유 식별자, 닉네임, 프로필 사진)</p><br>' +
-      '<p><b>2. 수집 및 이용 목적</b><br>- 회원 식별, 리뷰 작성자 표시</p><br>' +
-      '<p><b>3. 보유 및 파기</b><br>- 회원 탈퇴 시 계정 정보(이메일, 고유 식별자, 닉네임)는 즉시 삭제됩니다.<br>- 작성한 리뷰, 별점, 사진은 작성자와의 연결을 끊어 누가 작성했는지 알 수 없도록 익명 처리한 뒤 서비스에 남습니다.</p>' +
-      '</div>');
+    sheet('<h2>개인정보처리방침</h2>' + legalDoc(PRIVACY_DOC));
   },
   /* v0.059: 회원 탈퇴 — 계정 삭제, 리뷰는 익명 처리 (서버 함수 delete_my_account) */
   withdraw: () => {
@@ -2236,6 +2231,73 @@ document.addEventListener('click', e => {
   }
 });
 
+/* v0.075: 이용약관 · 개인정보처리방침 (시행일 2026-11-11) */
+const LEGAL_DATE = '2026년 11월 11일';
+function legalDoc(doc){
+  return '<div class="legal-doc"><p class="legal-date">시행일: ' + LEGAL_DATE + '</p>' +
+    doc.map(([t, items]) => '<h3>' + t + '</h3>' + (Array.isArray(items) ? '<ol>' + items.map(x => '<li>' + x + '</li>').join('') + '</ol>' : '<p>' + items + '</p>')).join('') + '</div>';
+}
+const TERMS_DOC = [
+  ['제1조 (목적)', '이 약관은 ‘진짜간짜장’(이하 “서비스”)의 이용 조건과 절차, 운영자와 이용자의 권리·의무를 정하는 것을 목적으로 합니다.'],
+  ['제2조 (서비스 내용)', [
+    '서비스는 전국 간짜장 판매 가게의 위치, 이용자 평점·리뷰·사진, 간짜장 가격 정보를 지도로 제공합니다.',
+    '지도에 이름이 표시된 가게는 운영자가 선정한 진짜 간짜장 <b>후보</b>이며, 이용자 평가에 따라 유지되거나 삭제될 수 있습니다.',
+    '가게 위치·상호 등 기본 정보는 공공데이터(소상공인시장진흥공단 상가정보)를 바탕으로 하며, 실제와 다를 수 있습니다.']],
+  ['제3조 (회원 가입과 계정)', [
+    '회원 가입은 구글 또는 카카오 계정으로 로그인하는 방식으로 이루어집니다.',
+    '만 14세 미만은 회원으로 가입할 수 없습니다.',
+    '닉네임은 가입 시 자동으로 정해지며, 회원은 총 3회까지 다시 뽑을 수 있습니다. 운영자 계정에는 별도의 이름이 부여될 수 있습니다.',
+    '계정은 본인만 이용할 수 있으며, 다른 사람에게 양도하거나 빌려줄 수 없습니다.']],
+  ['제4조 (로그인이 필요한 기능)', '리뷰·별점·사진 등록, 간짜장 가격 입력과 수정 제보, 가격 확인 투표, 가게 정보 오류 제보는 로그인한 회원만 이용할 수 있습니다. 공정한 평가를 위해 한 사람이 한 가게에 한 번씩만 평가하는 것을 원칙으로 합니다. 식당 등록 요청과 문의는 로그인 없이도 보낼 수 있습니다.'],
+  ['제5조 (게시물)', [
+    '회원이 작성한 리뷰·별점·사진·가격 제보(이하 “게시물”)의 책임은 작성한 회원에게 있습니다.',
+    '회원은 서비스가 게시물을 서비스 화면과 공유 링크에 표시하는 것에 동의합니다. 이 범위를 넘어 게시물을 다른 용도로 쓰지 않습니다.',
+    '회원은 내 정보 화면과 가게 화면에서 자신의 리뷰를 한 개씩 직접 삭제할 수 있습니다.',
+    '실제로 방문하지 않은 리뷰, 광고·홍보, 대가를 받고 쓴 리뷰, 욕설·비방, 개인정보가 담긴 내용, 타인의 저작물을 무단으로 쓴 사진은 등록할 수 없습니다.',
+    '운영자는 위 항목에 해당하거나 신고된 게시물을 사전 통보 없이 삭제하거나 숨길 수 있습니다.']],
+  ['제6조 (금지 행위)', [
+    '여러 계정을 만들어 평점이나 가격 투표를 조작하는 행위',
+    '가게 업주나 관계자가 자기 가게를 홍보하거나 경쟁 가게를 깎아내리는 행위',
+    '자동화된 수단으로 정보를 대량 수집하거나 서비스 운영을 방해하는 행위',
+    '다른 사람의 계정이나 개인정보를 도용하는 행위',
+    '위 행위가 확인되면 게시물 삭제, 이용 제한, 계정 정지 등의 조치를 할 수 있습니다.']],
+  ['제7조 (가게 정보와 가격)', '가게 정보와 간짜장 가격은 공공데이터와 이용자 제보를 바탕으로 하며, 가격은 서로 다른 회원 2명의 확인을 거쳐 반영됩니다. 실제 영업 여부, 메뉴, 가격과 다를 수 있으니 방문 전 가게에 확인해 주세요. 네이버 지도·카카오맵 등 외부 서비스로 연결되는 정보는 해당 서비스의 책임입니다.'],
+  ['제8조 (위치 정보)', '내 주변 가게를 보여 주기 위해 브라우저의 위치 권한을 요청할 수 있습니다. 위치는 이용자의 기기 안에서 지도를 옮기는 데만 쓰이며 서버에 저장하지 않습니다. 권한을 거부해도 지도 검색은 이용할 수 있습니다.'],
+  ['제9조 (회원 탈퇴)', [
+    '회원은 언제든지 내 정보 화면에서 탈퇴할 수 있습니다.',
+    '탈퇴하면 계정 정보(이메일, 고유 식별자, 닉네임)는 즉시 삭제됩니다.',
+    '탈퇴 전에 작성한 리뷰, 별점, 사진은 삭제되지 않고 작성자를 알 수 없도록 <b>익명으로 처리되어 남습니다</b>. 리뷰에는 작성자 대신 ‘탈퇴한 회원’으로 표시됩니다.',
+    '익명 처리된 게시물은 작성자를 확인할 수 없어 탈퇴 후에는 삭제를 요청할 수 없습니다. 삭제를 원하는 리뷰는 탈퇴 전에 직접 삭제해 주세요.']],
+  ['제10조 (서비스 변경과 중단)', '서비스는 무료로 제공되며, 운영상·기술상 필요에 따라 내용이 바뀌거나 일시 중단될 수 있습니다. 중요한 변경은 서비스 화면을 통해 미리 알립니다.'],
+  ['제11조 (책임의 한계)', '운영자는 이용자가 게시한 정보의 정확성을 보증하지 않으며, 이용자가 서비스 정보를 믿고 한 판단이나 가게 이용 과정에서 생긴 손해에 대해서는 운영자에게 고의 또는 중대한 과실이 없는 한 책임을 지지 않습니다.'],
+  ['제12조 (약관 변경)', '약관을 변경할 때는 시행일과 변경 내용을 시행 7일 전부터 서비스 화면에 알립니다. 이용자에게 불리한 변경은 30일 전부터 알립니다.'],
+  ['제13조 (문의)', '서비스 이용 문의와 신고는 메뉴의 ‘문의 · 오류·문제 신고’ 또는 hidden7005@gmail.com 으로 보낼 수 있습니다.']
+];
+const PRIVACY_DOC = [
+  ['1. 처리하는 개인정보', [
+    '<b>회원 가입·로그인</b>: 소셜 로그인 제공처(구글, 카카오)가 전달하는 고유 식별자, 이메일, 이름·프로필 사진 등 제공처가 넘겨주는 정보, 자동으로 정해진 닉네임',
+    '<b>서비스 이용</b>: 작성한 리뷰·별점·사진, 가격 제보와 투표 기록, 신고·제보 내용',
+    '<b>문의·식당 등록 요청</b>: 이용자가 입력한 내용과, 입력한 경우 연락처(이메일 등)',
+    '<b>자동 생성 정보</b>: 서비스 이용 과정에서 접속 기록(IP 주소, 접속 시각 등)이 호스팅·데이터베이스 제공자의 시스템에 생성될 수 있습니다.',
+    '<b>위치 정보</b>: 이용자가 허용한 경우 기기 안에서만 쓰며, 서버로 보내거나 저장하지 않습니다.']],
+  ['2. 이용 목적', '회원 식별과 로그인 유지, 리뷰 작성자 표시, 중복·부정 평가 방지, 신고와 문의 처리, 서비스 개선을 위해 이용합니다. 광고나 마케팅 목적으로 이용하거나 제3자에게 판매하지 않습니다.'],
+  ['3. 보유 기간과 파기', [
+    '계정 정보는 <b>회원 탈퇴 시 즉시 삭제</b>합니다.',
+    '탈퇴 회원의 리뷰·별점·사진은 작성자와의 연결을 끊어 누가 작성했는지 알 수 없도록 익명 처리한 뒤 서비스에 남습니다.',
+    '문의와 식당 등록 요청에 남긴 연락처는 처리가 끝난 뒤 1년이 지나면 파기합니다.',
+    '관계 법령에 따라 보존할 의무가 있는 정보는 해당 기간 동안 보관합니다.']],
+  ['4. 처리 위탁과 국외 이전', [
+    '<b>Supabase Inc.</b> (데이터베이스·로그인·사진 저장) — 데이터가 <b>프랑스(유럽 서부) 소재 서버</b>에 저장됩니다. 이전 항목은 위 1번의 정보이며, 회원 탈퇴 또는 위탁 계약 종료 시까지 보관합니다. 서비스 이용 시점에 네트워크를 통해 전송됩니다.',
+    '<b>Google LLC</b>, <b>㈜카카오</b> — 소셜 로그인 인증',
+    '<b>GitHub, Inc.</b> — 웹사이트 호스팅 (접속 기록이 생성될 수 있습니다)',
+    '<b>네이버클라우드㈜</b> — 지도 표시',
+    '국외 이전을 원하지 않으면 회원 가입을 하지 않거나 탈퇴할 수 있습니다. 이 경우 로그인이 필요한 기능은 이용할 수 없습니다.']],
+  ['5. 이용자의 권리', '이용자는 언제든지 자신의 개인정보를 열람·정정·삭제하거나 처리 정지를 요청할 수 있습니다. 리뷰 삭제와 회원 탈퇴는 내 정보 화면에서 직접 할 수 있고, 그 밖의 요청은 아래 연락처로 보내 주시면 지체 없이 처리합니다.'],
+  ['6. 만 14세 미만', '만 14세 미만 아동의 회원 가입을 받지 않습니다.'],
+  ['7. 안전성 확보 조치', '데이터베이스 접근 권한을 최소화하고, 회원은 자신의 정보만, 관리자는 지정된 기능만 처리할 수 있도록 접근을 제한하며, 모든 통신은 암호화(HTTPS)됩니다.'],
+  ['8. 개인정보 보호책임자', '진짜간짜장 운영자 · hidden7005@gmail.com<br>개인정보 침해 신고·상담: 개인정보침해신고센터(국번 없이 118, privacy.kisa.or.kr), 개인정보분쟁조정위원회(1833-6972, kopico.go.kr)'],
+  ['9. 변경', '이 방침이 바뀌면 시행일과 변경 내용을 서비스 화면에 알립니다.']
+];
 /* v0.071: 관리자 화면 — 요청·신고·제보 확인과 처리 (권한은 DB의 is_admin으로 검사) */
 const ADM_TABS = [['register','🍜 등록 요청'],['review_report','🚩 리뷰 신고'],['place_report','🏪 매장 제보'],['inquiry','💬 문의'],['hidden','🙈 숨긴 가게']];
 const RPT_LABEL = { closed:'폐업했어요', info:'주소·상호가 달라요', etc:'기타 오류' };
