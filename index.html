@@ -2084,7 +2084,8 @@ const A = {
   place: d => { const p = places.find(x => x.id === d.id); if (p) openPlace(p); },
   pick: d => { if (biz[d.id]) openNew(biz[d.id]); else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
   score: d => { scores[d.cat] = +d.n; updateStarsUI(); },
-  login: d => db.auth.signInWithOAuth({ provider: d.p, options: { redirectTo: location.origin + location.pathname } }),
+  /* v0.078: 카카오는 이메일 동의항목(account_email)이 없어서 요청 범위를 닉네임·프로필 사진으로 제한 (KOE205 방지) */
+  login: d => db.auth.signInWithOAuth({ provider: d.p, options: { redirectTo: location.origin + location.pathname, ...(d.p === 'kakao' ? { queryParams: { scope: 'profile_nickname profile_image' } } : {}) } }),
   logout: async () => { await db.auth.signOut(); closeSheet(); },
   user: d => openUser(d.id, true),
   moreUserReviews: () => renderUserReviewRows(),
