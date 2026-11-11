@@ -675,6 +675,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #brand-logo { background:#f1f0dc !important; }
 #brand-logo:active { background:#e6e4cc !important; }
 #brand-logo .brand-img { height:26px; width:auto; display:block; }
+/* v0.083: 로그인 전 만 14세·약관 동의 체크 */
+.login-agree { display:flex; align-items:flex-start; gap:10px; margin-top:18px; padding:12px 14px; border-radius:12px; background:var(--system-bg); font-size:14px; line-height:1.45; color:var(--label-primary); text-align:left; cursor:pointer; }
+.login-agree input { width:20px; height:20px; margin:1px 0 0; flex-shrink:0; accent-color:var(--apple-blue); }
+.login-agree a { color:var(--apple-blue); text-decoration:underline; white-space:nowrap; }
+.login-agree.need { outline:2px solid #ff3b30; }
+.login-agree.need:has(input:checked) { outline:none; }
 /* 다크 모드: 사용자가 준 반전 로고(빨간 바탕·크림 그림) */
 @media (prefers-color-scheme: dark) {
   #brand-logo { background:#a11623 !important; }
@@ -905,7 +911,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.082</div>
+<div id="ver-badge">v0.083</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -925,7 +931,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.082</div>
+  <div class="nav-foot">진짜간짜장 · v0.083</div>
 </nav>
 
 <div id="top-container">
@@ -1093,6 +1099,19 @@ function closeSheet(fromPopstate = false){
   if (!fromPopstate && history.state?.sheetOpen) history.back();
 }
 window.addEventListener('popstate', () => { if ($('sheet').classList.contains('open')) closeSheet(true); });
+/* v0.083: 서버가 막은 이유를 쉬운 말로 (중복 리뷰, 숨긴 가게 등) */
+function dbErrMsg(e){
+  const m = String(e?.message || '');
+  if (e?.code === '23505' && m.includes('reviews_place_user_uniq')) return '이미 평가한 가게예요. 내 리뷰를 지우면 다시 평가할 수 있어요';
+  if (e?.code === '23505' && m.includes('places_biz_id_key')) return '지금은 평가를 받지 않는 가게예요';
+  if (/[가-힣]/.test(m)) return m;
+  return '저장하지 못했어요: ' + m;
+}
+async function alreadyReviewed(placeId){
+  if (!me || !placeId) return false;
+  const { data } = await db.from('reviews').select('id').eq('place_id', placeId).eq('user_id', me.id).limit(1);
+  return !!(data && data.length);
+}
 function needLogin(){ if (!me){ openLogin(); return true; } return false; }
 
 const BAD_WORDS = ['시발', '씨발', '개새끼', '존나', '병신', '지랄', '새끼', '미친놈', '미친년', '좆', '창녀', '느금', '엠창', 'ㅅㅂ', 'ㅂㅅ', 'ㅈㄹ', 'tlqkf'];
@@ -1598,9 +1617,10 @@ async function openPlace(p){
   if (map) map.panTo(new naver.maps.LatLng(p.lat, p.lng));
 }
 
-function openReviewComposer(focusPrice = false){
+async function openReviewComposer(focusPrice = false){
   if (!cur) return;
   if (requireLoginFor(focusPrice ? 'price' : 'review')) return;
+  if (await alreadyReviewed(cur.id)) { toast('이미 평가한 가게예요. 내 리뷰를 지우면 다시 평가할 수 있어요'); return; }
   const showPriceInput = !(Number(cur.price) > 0);
   sheet('<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' +
     '<div class="detail-kicker">리뷰 작성</div><h2>' + esc(cur.name) + '</h2>' +
@@ -1622,8 +1642,8 @@ function openNew(b){
 
 function openLogin(returnToPlace = false){
   openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br><br>그런데 광고성 리뷰와 평점 조작을 막고 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 버튼 한 번이면 끝나요</p>' +
-    '<div class="btns" style="margin-top:18px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>' +
-    '<p style="font-size:12px;color:var(--label-tertiary);text-align:center;margin-top:16px;line-height:1.5;">계속 진행하면 진짜간짜장의 <a href="javascript:void(0)" data-a="showTerms" style="color:var(--apple-blue);text-decoration:underline;">이용약관</a> 및 <a href="javascript:void(0)" data-a="showPrivacy" style="color:var(--apple-blue);text-decoration:underline;">개인정보처리방침</a>에 동의하게 됩니다.</p>');
+    '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>' +
+    '<div class="btns" style="margin-top:14px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>');
 }
 function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; }
 function closeModal(){ $('modal').hidden = true; $('modal-body').innerHTML = ''; }
@@ -2102,7 +2122,12 @@ const A = {
   pick: d => { if (biz[d.id]) openNew(biz[d.id]); else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
   score: d => { scores[d.cat] = +d.n; updateStarsUI(); },
   /* v0.078: 카카오는 이메일 동의항목(account_email)이 없어서 요청 범위를 닉네임·프로필 사진으로 제한 (KOE205 방지) */
-  login: d => db.auth.signInWithOAuth({ provider: d.p, options: { redirectTo: location.origin + location.pathname, ...(d.p === 'kakao' ? { queryParams: { scope: 'profile_nickname profile_image' } } : {}) } }),
+  login: d => {
+    /* v0.083: 만 14세 이상·약관 동의 체크 후에만 로그인 */
+    const ag = $('login-agree');
+    if (ag && !ag.checked) { toast('만 14세 이상 확인과 약관 동의에 체크해주세요'); ag.closest('.login-agree')?.classList.add('need'); return; }
+    return db.auth.signInWithOAuth({ provider: d.p, options: { redirectTo: location.origin + location.pathname, ...(d.p === 'kakao' ? { queryParams: { scope: 'profile_nickname profile_image' } } : {}) } });
+  },
   logout: async () => { await db.auth.signOut(); closeSheet(); },
   user: d => openUser(d.id, true),
   moreUserReviews: () => renderUserReviewRows(),
@@ -2153,7 +2178,7 @@ const A = {
       comment: commentVal || null,
       photo_url: photoUrl
     });
-    if (rErr){ toast('등록 실패: ' + rErr.message); return; }
+    if (rErr){ toast(dbErrMsg(rErr)); return; }
     if (me?.id) reviewerStatsCache.delete(me.id);
     toast('평가가 입력되었어요!');
     await load(); openPlace(cur);
@@ -2188,7 +2213,7 @@ const A = {
       kind: '간짜장', price, lat: b.lat, lng: b.lng, address: b.road_addr || b.lot_addr
     }).select().single();
 
-    if (insErr){ toast('가게 등록 실패: ' + insErr.message); return; }
+    if (insErr){ toast(dbErrMsg(insErr)); return; }
 
     let photoUrl = null;
     if (selectedPhotoBlob) {
@@ -2216,7 +2241,7 @@ const A = {
     });
 
     if (rErr) {
-      toast('가게는 등록되었으나 리뷰 저장에 실패했습니다: ' + rErr.message);
+      toast('가게는 등록되었지만 평가는 저장하지 못했어요: ' + dbErrMsg(rErr));
     } else {
       reviewerStatsCache.delete(me.id);
       toast('가게 정보와 별점이 등록되었어요!');
@@ -2406,8 +2431,12 @@ function resumePending(){
 let nicknameWelcomeShown = false;
 async function checkUserProfile(user){
   if (!user || nicknameWelcomeShown) return;
-  const { data, error } = await db.from('profiles').select('username,nickname_changes,nickname_welcomed,is_admin').eq('id', user.id).maybeSingle();
-  setAdmin(!!data?.is_admin);
+  /* v0.083: 관리자 여부는 공개 열이 아니라 is_admin() 함수로 확인 */
+  const [{ data, error }, adm] = await Promise.all([
+    db.from('profiles').select('username,nickname_changes,nickname_welcomed').eq('id', user.id).maybeSingle(),
+    db.rpc('is_admin')
+  ]);
+  setAdmin(adm?.data === true);
   if (error || !data || data.nickname_welcomed) { profileChecked = true; resumePending(); return; }
   nicknameWelcomeShown = true;
   profileChecked = true;
@@ -2427,7 +2456,7 @@ const INTRO_KEY = 'mygjj_intro_hidden_v1';
 function showIntro(){
   let hidden = false;
   try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
-  if (hidden || SHARED_PLACE_ID || SHARED_DOC || $('sheet').classList.contains('open') || !$('modal').hidden) return;
+  if (hidden || me || /access_token|[?&]code=/.test(location.hash + location.search) || SHARED_PLACE_ID || SHARED_DOC || $('sheet').classList.contains('open') || !$('modal').hidden) return;
   /* v0.072: 첫 화면 안내도 가운데 팝업으로 */
   openModal('<div class="detail-kicker">진짜간짜장 안내</div><h2 id="modal-title">지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
     '<p class="sub" style="margin:18px 0 22px;">지도에 매장 이름이 표시된 곳은 진짜 간짜장 후보 리스트예요<br>' +
