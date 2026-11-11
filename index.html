@@ -675,6 +675,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #brand-logo { background:#f1f0dc !important; }
 #brand-logo:active { background:#e6e4cc !important; }
 #brand-logo .brand-img { height:26px; width:auto; display:block; }
+/* 다크 모드: 사용자가 준 반전 로고(빨간 바탕·크림 그림) */
+@media (prefers-color-scheme: dark) {
+  #brand-logo { background:#a11623 !important; }
+  #brand-logo:active { background:#8c1320 !important; }
+}
 
 /* v0.050 — 현재 위치로 이동 */
 #locate-btn {
@@ -927,7 +932,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div id="top">
     <button id="nav-toggle" class="glass nav-toggle" type="button" aria-label="전체 메뉴 열기" aria-controls="nav-drawer" aria-expanded="false"><span aria-hidden="true">☰</span><span class="nav-toggle-label">메뉴</span></button>
     <button id="brand-logo" class="glass brand-btn" data-a="refresh" title="지도를 새로고침합니다">
-      <img class="brand-img" src="icons/brand.svg" alt="진짜간짜장" width="86" height="26">
+      <picture><source srcset="icons/brand-dark.svg" media="(prefers-color-scheme: dark)"><img class="brand-img" src="icons/brand.svg" alt="진짜간짜장" width="86" height="26"></picture>
     </button>
     <input id="q" class="glass" type="search" placeholder="가게 이름 검색" autocomplete="off">
   </div>
