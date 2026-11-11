@@ -671,6 +671,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .pin.biz-single.pin-full .pin-label { max-width:none; }
 @media(max-width:420px){ #top {grid-template-columns:42px auto minmax(0,1fr);} #brand-logo{padding:0 7px;} #sort-bar{gap:4px;} .sort-pill{padding:0 10px;} }
 @media(max-width:350px){ #top {grid-template-columns:38px minmax(0,1fr);} #brand-logo{display:none;} #q{grid-column:2;} }
+/* v0.082: 상단 로고를 사용자 로고 이미지로 (높이 26px). 라이트·다크 모두 로고 원래 색(크림 바탕) 그대로 */
+#brand-logo { background:#f1f0dc !important; }
+#brand-logo:active { background:#e6e4cc !important; }
+#brand-logo .brand-img { height:26px; width:auto; display:block; }
 
 /* v0.050 — 현재 위치로 이동 */
 #locate-btn {
@@ -896,7 +900,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.081</div>
+<div id="ver-badge">v0.082</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -916,15 +920,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.081</div>
+  <div class="nav-foot">진짜간짜장 · v0.082</div>
 </nav>
 
 <div id="top-container">
   <div id="top">
     <button id="nav-toggle" class="glass nav-toggle" type="button" aria-label="전체 메뉴 열기" aria-controls="nav-drawer" aria-expanded="false"><span aria-hidden="true">☰</span><span class="nav-toggle-label">메뉴</span></button>
     <button id="brand-logo" class="glass brand-btn" data-a="refresh" title="지도를 새로고침합니다">
-      <span style="font-size:17px;">🍜</span>
-      <span>진짜<span class="brand-point">간짜장</span></span>
+      <img class="brand-img" src="icons/brand.svg" alt="진짜간짜장" width="86" height="26">
     </button>
     <input id="q" class="glass" type="search" placeholder="가게 이름 검색" autocomplete="off">
   </div>
