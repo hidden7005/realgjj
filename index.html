@@ -896,7 +896,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.079</div>
+<div id="ver-badge">v0.080</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -916,7 +916,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.079</div>
+  <div class="nav-foot">진짜간짜장 · v0.080</div>
 </nav>
 
 <div id="top-container">
@@ -2419,7 +2419,7 @@ const INTRO_KEY = 'mygjj_intro_hidden_v1';
 function showIntro(){
   let hidden = false;
   try { hidden = localStorage.getItem(INTRO_KEY) === '1'; } catch (e) {}
-  if (hidden || SHARED_PLACE_ID || $('sheet').classList.contains('open') || !$('modal').hidden) return;
+  if (hidden || SHARED_PLACE_ID || SHARED_DOC || $('sheet').classList.contains('open') || !$('modal').hidden) return;
   /* v0.072: 첫 화면 안내도 가운데 팝업으로 */
   openModal('<div class="detail-kicker">진짜간짜장 안내</div><h2 id="modal-title">지금은 진짜 간짜장 데이터를 모으는 중이에요</h2>' +
     '<p class="sub" style="margin:18px 0 22px;">지도에 매장 이름이 표시된 곳은 진짜 간짜장 후보 리스트예요<br>' +
@@ -2430,6 +2430,10 @@ function showIntro(){
 }
 A.introOk = () => closeModal();
 A.introHide = () => { try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} closeModal(); };
+/* v0.080: 약관·방침 바로가기 주소 (?doc=terms, ?doc=privacy). 구글 브랜딩 등 외부에 적는 링크용 */
+const SHARED_DOC = (() => { try { return new URLSearchParams(location.search).get('doc'); } catch (e) { return null; } })();
+if (SHARED_DOC === 'terms') A.showTerms();
+else if (SHARED_DOC === 'privacy') A.showPrivacy();
 setTimeout(showIntro, 400);
 
 db.auth.getSession().then(({ data }) => {
