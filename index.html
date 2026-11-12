@@ -478,6 +478,18 @@ input {
 .u { color: var(--apple-blue); font-weight: 600; }
 .rv-photo-wrap { margin-top: 8px; border-radius: 12px; overflow: hidden; max-height: 220px; }
 .rv-photo { width: 100%; max-height: 220px; object-fit: cover; }
+/* v0.086: 리뷰 사진 2장 */
+.rv-photos { display:grid; grid-template-columns:1fr; gap:6px; margin-top:8px; }
+.rv-photos.two { grid-template-columns:1fr 1fr; }
+.rv-photos a { display:block; border-radius:12px; overflow:hidden; }
+.rv-photos img { display:block; width:100%; height:180px; object-fit:cover; }
+.rv-photos.two img { height:140px; }
+.photo-thumbs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.photo-thumbs:empty { display:none; }
+.photo-thumb { position:relative; height:140px; border-radius:14px; overflow:hidden; border:0.5px solid var(--separator); }
+.photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.review-edited { color:var(--label-tertiary); font-size:12px; }
+.review-edit { color:var(--apple-blue); }
 
 /* v0.069: 가운데 팝업 (로그인 안내용) */
 #modal { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:16px; }
@@ -665,6 +677,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .gjj-farewell .gjj-farewell-en { margin-top:8px; font-size:15px; font-weight:600; font-style:italic; opacity:.9; }
 #sheet .user-review-actions .user-review-go { margin-top:0; }
 #sheet .user-review-actions .review-delete { margin-left:auto; }
+#sheet .user-review-actions .review-edit { margin-left:auto; }
+#sheet .user-review-actions .review-edit + .review-delete { margin-left:0; }
+.review-meta .review-edit + .review-delete { margin-left:0; }
 
 /* v0.050 — 지도 우선형 모바일 헤더 */
 #top { grid-template-columns:66px auto minmax(0,1fr); }
@@ -832,6 +847,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #sheet .reviewer-stats{font-size:12px;color:var(--label-secondary);white-space:nowrap}
 #sheet .review-meta{flex-wrap:wrap;column-gap:8px;row-gap:4px}
 #sheet .review-report{margin-left:auto}
+#sheet .review-edit + .review-delete{margin-left:0}
 #sheet .user-review-place{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 #sheet .user-review-place time{font-size:12px;color:var(--label-secondary);white-space:nowrap}
 #sheet .user-review-photo{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:10px}
@@ -922,7 +938,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.085</div>
+<div id="ver-badge">v0.086</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -942,7 +958,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.085</div>
+  <div class="nav-foot">진짜간짜장 · v0.086</div>
 </nav>
 
 <div id="top-container">
@@ -954,8 +970,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
     <input id="q" class="glass" type="search" placeholder="가게 이름 검색" autocomplete="off">
   </div>
   <div id="sort-bar">
+    <button class="sort-pill real-filter-pill" id="pill-real" type="button" aria-pressed="false">🔥 진짜 간짜장</button>
     <button class="sort-pill jjajang-filter-pill filtered" id="pill-jjajang" type="button" aria-pressed="true">🍜 후보 간짜장</button>
-    <button class="sort-pill real-filter-pill" id="pill-real" type="button" aria-pressed="false" hidden>🔥 인증 간짜장</button>
     <button class="sort-pill" id="pill-rating" data-pop="rating">★ 별점 ▾</button>
     <button class="sort-pill" id="pill-price" data-pop="price">₩ 가격대 ▾</button>
     <button class="sort-pill" id="pill-reset" style="display:none;color:#ff3b30;">↺ 초기화</button>
@@ -991,7 +1007,10 @@ let filterJjajangOnly = true;
 let filterPrice = 'all';
 let myCoord = null;
 let openPopType = null;
-let selectedPhotoBlob = null;
+/* v0.086: 리뷰 사진은 최대 2장. { blob, url } 새 사진 또는 { existing: url } 기존 사진 */
+const MAX_PHOTOS = 2;
+let photoSlots = [];
+let editingReview = null;
 
 let scores = { is_real: null, taste: 0, price: 0, kind: 0 };
 
@@ -1132,7 +1151,7 @@ function containsBadWords(text) {
   return BAD_WORDS.some(w => clean.includes(w));
 }
 
-function resetScores(){ scores = { is_real: null, taste: 0, price: 0, kind: 0 }; selectedPhotoBlob = null; if (currentPreviewUrl) { URL.revokeObjectURL(currentPreviewUrl); currentPreviewUrl = null; } }
+function resetScores(){ scores = { is_real: null, taste: 0, price: 0, kind: 0 }; photoSlots.forEach(x => x.url && URL.revokeObjectURL(x.url)); photoSlots = []; editingReview = null; }
 
 async function resizeImageFile(file, maxDimension = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
@@ -1230,9 +1249,10 @@ function clearNearbyMarkers() {
   nearbyMarkers.forEach(m => m.setMap(null));
   nearbyMarkers = [];
 }
+/* v0.086: 진짜 간짜장 = 평가 3개 이상이고 90% 이상이 '진짜'라고 한 곳 (버튼 필터용) */
 function isVerifiedReal(p) {
   const st = realStats[p.id];
-  return SHOW_REAL && !!(st && st.total >= 3 && st.yes / st.total >= 0.9);
+  return !!(st && st.total >= 3 && st.yes / st.total >= 0.9);
 }
 
 const PIN_LABEL_ZOOM = 13; // 네이버 지도 축척 막대 약 1km
@@ -1417,6 +1437,7 @@ $('sort-bar').addEventListener('click', e => {
   const btn = e.target.closest('.sort-pill'); if (!btn) return;
   if (btn.id === 'pill-jjajang') {
     filterJjajangOnly = !filterJjajangOnly;
+    if (!filterJjajangOnly) filterRealOnly = false;
     updatePillLabels(); closePopover(); drawPins();
     fetchNearbyBiz();
     toast(filterJjajangOnly ? '후보 간짜장 매장을 강조해서 표시합니다' : '모든 매장을 같은 모양으로 표시합니다');
@@ -1424,9 +1445,11 @@ $('sort-bar').addEventListener('click', e => {
   }
   if (btn.id === 'pill-real') {
     filterRealOnly = !filterRealOnly;
+    if (filterRealOnly) filterJjajangOnly = true;
     updatePillLabels(); closePopover(); drawPins();
     ++nearbySeq; if (filterRealOnly) clearNearbyMarkers(); else fetchNearbyBiz();
-    toast(filterRealOnly ? '인증 간짜장 매장만 표시합니다' : '모든 매장을 표시합니다');
+    const realCount = places.filter(isVerifiedReal).length;
+    toast(!filterRealOnly ? '후보 간짜장을 모두 표시합니다' : realCount ? '진짜 간짜장 ' + realCount + '곳만 표시합니다' : '아직 진짜 간짜장으로 확인된 곳이 없어요. 평가 3개 이상, 90% 이상이 진짜라고 한 곳이 여기에 나와요');
     return;
   }
   if (btn.id === 'pill-reset') {
@@ -1489,14 +1512,11 @@ function renderRatingComponent(showPriceInput = false, compact = false){
 
     ${compact ? '' : `<input id="c" placeholder="한줄평 (선택 · 비워도 별점 등록 가능)" maxlength="100">
     <div class="photo-uploader">
+      <div id="photo-thumbs" class="photo-thumbs"></div>
       <label for="review-photo-input" class="photo-upload-btn" id="photo-upload-label">
-        <span>📷</span><span>간짜장 사진 첨부 (선택)</span>
+        <span>📷</span><span id="photo-upload-text">간짜장 사진 첨부 (선택 · 최대 2장)</span>
       </label>
-      <input id="review-photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event)">
-      <div id="photo-preview-box" class="photo-preview-box" style="display:none;">
-        <img id="photo-preview-img" src="" alt="미리보기">
-        <button type="button" class="photo-remove-btn" onclick="removeSelectedPhoto()">✕</button>
-      </div>
+      <input id="review-photo-input" type="file" accept="image/*" multiple style="display:none;" onchange="handlePhotoSelect(event)">
     </div>`}
   `;
 }
@@ -1523,32 +1543,68 @@ function updateStarsUI(){
 }
 
 async function handlePhotoSelect(e) {
-  const file = e.target.files?.[0]; if (!file) return;
+  const files = [...(e.target.files || [])]; e.target.value = '';
+  if (!files.length) return;
+  const room = MAX_PHOTOS - photoSlots.length;
+  if (room <= 0) { toast('사진은 2장까지 올릴 수 있어요'); return; }
+  if (files.length > room) toast('사진은 2장까지 올릴 수 있어요. 앞의 ' + room + '장만 넣었어요');
   toast('사진 최적화 중 (1200px)...');
   try {
-    selectedPhotoBlob = await resizeImageFile(file, 1200, 0.82);
-    if (currentPreviewUrl) { URL.revokeObjectURL(currentPreviewUrl); }
-    currentPreviewUrl = URL.createObjectURL(selectedPhotoBlob);
-    $('photo-preview-img').src = currentPreviewUrl;
-    $('photo-preview-box').style.display = 'block';
-    $('photo-upload-label').style.display = 'none';
-    toast(`사진 준비 완료 (${Math.round(selectedPhotoBlob.size / 1024)}KB)`);
-  } catch(err) { toast('사진 처리 실패: ' + err.message); }
+    for (const file of files.slice(0, room)) {
+      const blob = await resizeImageFile(file, 1200, 0.82);
+      photoSlots.push({ blob, url: URL.createObjectURL(blob) });
+    }
+    renderPhotoSlots();
+    toast('사진 준비 완료 (' + photoSlots.length + '/2)');
+  } catch(err) { toast('사진 처리 실패: ' + err.message); renderPhotoSlots(); }
 }
-
-function removeSelectedPhoto() {
-  selectedPhotoBlob = null;
-  if (currentPreviewUrl) { URL.revokeObjectURL(currentPreviewUrl); currentPreviewUrl = null; }
-  if ($('review-photo-input')) $('review-photo-input').value = '';
-  if ($('photo-preview-box')) $('photo-preview-box').style.display = 'none';
-  if ($('photo-upload-label')) $('photo-upload-label').style.display = 'flex';
+function renderPhotoSlots() {
+  const box = $('photo-thumbs'); if (!box) return;
+  box.innerHTML = photoSlots.map((x, i) => '<div class="photo-thumb"><img src="' + esc(x.url || x.existing) + '" alt="사진 ' + (i + 1) + '"><button type="button" class="photo-remove-btn" onclick="removePhotoSlot(' + i + ')" aria-label="사진 ' + (i + 1) + ' 빼기">✕</button></div>').join('');
+  const label = $('photo-upload-label'), text = $('photo-upload-text');
+  if (label) label.style.display = photoSlots.length >= MAX_PHOTOS ? 'none' : 'flex';
+  if (text) text.textContent = photoSlots.length ? '사진 추가 (' + photoSlots.length + '/2)' : '간짜장 사진 첨부 (선택 · 최대 2장)';
+}
+function removePhotoSlot(i) {
+  const x = photoSlots[i]; if (!x) return;
+  if (x.url) URL.revokeObjectURL(x.url);
+  photoSlots.splice(i, 1);
+  renderPhotoSlots();
+}
+/* 새 사진은 올리고, 기존 사진은 주소 그대로. 실패하면 null */
+async function uploadPhotoSlots(placeId) {
+  const urls = [];
+  for (const x of photoSlots) {
+    if (x.existing) { urls.push(x.existing); continue; }
+    toast('사진 업로드 중... (' + (urls.length + 1) + '/' + photoSlots.length + ')');
+    const filePath = placeId + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '.jpg';
+    const { error } = await db.storage.from('review-images').upload(filePath, x.blob, { contentType: 'image/jpeg' });
+    if (error) { toast('사진 업로드 실패: ' + error.message); return null; }
+    urls.push(db.storage.from('review-images').getPublicUrl(filePath).data.publicUrl);
+  }
+  return urls;
+}
+function photoPath(url) {
+  const m = String(url || '').match(/\/review-images\/(.+)$/);
+  return m ? decodeURIComponent(m[1].split('?')[0]) : null;
+}
+async function removeStoragePhotos(urls) {
+  const paths = urls.map(photoPath).filter(Boolean);
+  if (!paths.length) return;
+  try { await db.storage.from('review-images').remove(paths); } catch (e) { console.warn('사진 삭제 실패', e); }
+}
+const SAFE_URL = u => !!u && /^https:\/\/[^\s"'<>]+$/i.test(u);
+function reviewPhotos(r) { return [r.photo_url, r.photo_url2].filter(SAFE_URL); }
+function reviewPhotosHtml(r) {
+  const ph = reviewPhotos(r); if (!ph.length) return '';
+  return '<div class="rv-photos' + (ph.length > 1 ? ' two' : '') + '">' + ph.map((u, i) => '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(u) + '" alt="리뷰 사진 ' + (i + 1) + '" loading="lazy"></a>').join('') + '</div>';
 }
 
 // ── 상세 시트 오픈
 async function openPlace(p){
   cur = p; const rt = rate[p.id], addr = p.address || '';
   const priceMissing = !(p.price > 0);
-  const rv = (await db.from('reviews').select('id,created_at,rating,comment,user_id,photo_url,is_real,profiles(username)').eq('place_id', p.id).order('created_at', { ascending: false }).limit(15)).data || [];
+  const rv = (await db.from('reviews').select('id,created_at,updated_at,rating,comment,user_id,photo_url,photo_url2,is_real,profiles(username)').eq('place_id', p.id).order('created_at', { ascending: false }).limit(15)).data || [];
 
   /* v0.055: 좌표 핀 대신 '지역 + 가게 이름'으로 검색해서 실제 가게 정보가 뜨게 함 */
   const mapName = String(p.name || '').replace(/\s*[(\[（][^)\]）]*[)\]）]\s*/g, ' ').trim() || p.name; // '아서원 (필동)' → '아서원'
@@ -1591,20 +1647,20 @@ async function openPlace(p){
   }
 
   // 읽기 우선 상세 화면: 핵심 정보 → 외부 지도 → 사진 → 기존 리뷰 → 작성/제보.
-  const validPhotos = rv.filter(r => r.photo_url && /^https:\/\/[^\s"'<>]+$/i.test(r.photo_url));
+  const validPhotos = rv.flatMap(r => reviewPhotos(r));
   const photosHtml = validPhotos.length ?
     '<section class="detail-section"><div class="detail-section-head"><h3>사진</h3><span class="detail-count">' + validPhotos.length + '장 (최근 리뷰 기준)</span></div>' +
-    '<div class="detail-photo-grid">' + validPhotos.slice(0, 4).map((r, i) =>
-      '<a href="' + esc(r.photo_url) + '" target="_blank" rel="noopener noreferrer" aria-label="사진 ' + (i+1) + ' 크게 보기"><img src="' + esc(r.photo_url) + '" alt="간짜장 리뷰 사진 ' + (i+1) + '" loading="lazy"></a>'
+    '<div class="detail-photo-grid">' + validPhotos.slice(0, 4).map((u, i) =>
+      '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer" aria-label="사진 ' + (i+1) + ' 크게 보기"><img src="' + esc(u) + '" alt="간짜장 리뷰 사진 ' + (i+1) + '" loading="lazy"></a>'
     ).join('') + '</div></section>' : '';
   const reviewsHtml = rv.length ? rv.map(r => {
     const dateText = r.created_at && !Number.isNaN(new Date(r.created_at).getTime()) ? new Date(r.created_at).toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'}) : '';
     const badge = r.is_real === true ? '<span class="real-badge">진짜</span>' : r.is_real === false ? '<span class="review-not-real">미달</span>' : '';
-    const photo = r.photo_url && /^https:\/\/[^\s"'<>]+$/i.test(r.photo_url) ? '<div class="rv-photo-wrap"><a href="' + esc(r.photo_url) + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(r.photo_url) + '" class="rv-photo" alt="리뷰 사진" loading="lazy"></a></div>' : '';
+    const photo = reviewPhotosHtml(r);
     return '<article class="rv"><div class="review-meta">' + (r.user_id ? '<button class="u" data-a="user" data-id="' + esc(r.user_id) + '">@' + esc(r.profiles?.username || '익명') + '</button>' : '<span class="u">탈퇴한 회원</span>') +
       '<span class="reviewer-stats" data-user-stats="' + esc(r.user_id) + '">(집계 중)</span>' +
-      (dateText ? '<time class="review-date">' + esc(dateText) + '</time>' : '') +
-      (me?.id && r.user_id === me.id ? '<button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
+      (dateText ? '<time class="review-date">' + esc(dateText) + '</time>' : '') + (r.updated_at ? '<span class="review-edited">(수정됨)</span>' : '') +
+      (me?.id && r.user_id === me.id ? '<button class="review-report review-edit" data-a="editReview" data-id="' + esc(r.id) + '">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
       '<div class="review-score">' + badge + ' <strong>★ ' + Number(r.rating || 0).toFixed(1) + '</strong></div>' +
       (r.comment ? '<div class="review-comment">' + esc(r.comment) + '</div>' : '') + photo + '</article>';
   }).join('') : '<p class="detail-empty">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요.</p>';
@@ -1644,6 +1700,41 @@ async function openReviewComposer(focusPrice = false){
   }
 }
 
+/* v0.086: 내 리뷰 수정 — 별점·진짜 여부·한줄평·사진(최대 2장)만 바꿀 수 있음 */
+async function openReviewEditor(id){
+  if (!me || !id) return;
+  const { data: r, error } = await db.from('reviews').select('id,place_id,taste,price_score,kind,is_real,comment,photo_url,photo_url2').eq('id', id).eq('user_id', me.id).maybeSingle();
+  if (error || !r) { toast('수정할 수 있는 리뷰가 아니에요'); return; }
+  const place = places.find(p => String(p.id) === String(r.place_id));
+  if (!place) { toast('지금은 평가를 받지 않는 가게예요'); return; }
+  cur = place;
+  sheet('<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' +
+    '<div class="detail-kicker">리뷰 수정</div><h2>' + esc(place.name) + '</h2>' +
+    '<p class="sub">바꾸고 싶은 부분만 고친 뒤 저장해 주세요</p>' +
+    renderRatingComponent(false) +
+    '<button class="btn primary" style="margin-top:18px" data-a="review">수정 저장하기</button>', {fullscreen:true});
+  editingReview = { id: r.id, oldPhotos: [r.photo_url, r.photo_url2].filter(Boolean) };
+  scores.taste = Number(r.taste) || 0; scores.price = Number(r.price_score) || 0; scores.kind = Number(r.kind) || 0;
+  if (r.is_real === true || r.is_real === false) setRealStatus(r.is_real);
+  updateStarsUI();
+  if ($('c')) $('c').value = r.comment || '';
+  photoSlots = reviewPhotos(r).map(u => ({ existing: u }));
+  renderPhotoSlots();
+}
+async function saveReviewEdit(commentVal){
+  const ed = editingReview; if (!ed || !me) return;
+  const urls = await uploadPhotoSlots(cur.id);
+  if (!urls) return;
+  const { error } = await db.from('reviews').update({
+    taste: scores.taste, price_score: scores.price, kind: scores.kind, is_real: scores.is_real,
+    comment: commentVal || null, photo_url: urls[0] || null, photo_url2: urls[1] || null
+  }).eq('id', ed.id).eq('user_id', me.id);
+  if (error) { toast(dbErrMsg(error)); return; }
+  await removeStoragePhotos(ed.oldPhotos.filter(u => !urls.includes(u)));
+  reviewerStatsCache.delete(me.id);
+  toast('리뷰를 수정했어요');
+  await load(); openPlace(cur);
+}
 function openNew(b){
   curBiz = b;
   sheet('<h2>' + esc(b.name) + (b.branch ? ' ' + esc(b.branch) : '') + '</h2><p class="sub">' + esc(b.road_addr || b.lot_addr) + '</p>' +
@@ -1669,7 +1760,7 @@ async function getReviewerStats(uid){
     const pageSize=500;
     while(true){
       const {data,error}=await db.from('reviews')
-        .select('id,place_id,created_at,rating,comment,photo_url,is_real')
+        .select('id,place_id,created_at,updated_at,rating,comment,photo_url,photo_url2,is_real')
         .eq('user_id',uid).order('created_at',{ascending:false})
         .range(offset,offset+pageSize-1);
       if(error) throw error;
@@ -1711,12 +1802,12 @@ function renderUserReviewRows(){
     const place=places.find(p=>String(p.id)===String(r.place_id));
     const name=place?.name||'식당 정보';
     const date=r.created_at&&!Number.isNaN(Date.parse(r.created_at)) ? new Date(r.created_at).toLocaleDateString('ko-KR') : '';
-    const photo=r.photo_url && /^https:\/\/[^\s"'<>]+$/i.test(r.photo_url) ? '<img class="user-review-photo" src="'+esc(r.photo_url)+'" alt="리뷰 사진" loading="lazy">':'';
+    const photo=reviewPhotosHtml(r);
     return '<article class="rv user-review-item"><div class="user-review-place"><b>'+esc(name)+'</b><time>'+esc(date)+'</time></div>'+
       '<div class="review-score"><strong>★ '+Number(r.rating||0).toFixed(1)+'</strong></div>'+
       (r.comment?'<p class="review-comment">'+esc(r.comment)+'</p>':'')+photo+
       '<div class="user-review-actions">'+(place?'<button class="user-review-go" data-a="place" data-id="'+esc(place.id)+'">식당 보기 ›</button>':'')+
-      (profileIsMine?'<button class="review-report review-delete" data-a="deleteReview" data-id="'+esc(r.id)+'">삭제</button>':'')+'</div></article>';
+      (profileIsMine?'<button class="review-report review-edit" data-a="editReview" data-id="'+esc(r.id)+'">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="'+esc(r.id)+'">삭제</button>':'')+'</div></article>';
   }).join(''));
   profileReviewOffset+=slice.length;
   const more=$('user-review-more');
@@ -1803,10 +1894,10 @@ const A = {
   admDeleteReview: async d => {
     const r = admRows[+d.i]; const rid = r && admRef(r, 'review'); if (!rid) return;
     if (!confirm('이 리뷰를 삭제할까요?\n삭제한 리뷰는 되돌릴 수 없어요')) return;
+    const { data: before } = await db.from('reviews').select('photo_url,photo_url2').eq('id', rid).maybeSingle();
     const { data: photo, error } = await db.rpc('admin_delete_review', { p_review: rid });
     if (error) { toast('실패: ' + error.message); return; }
-    const m = (photo || '').match(/\/review-images\/(.+)$/);
-    if (m) { try { await db.storage.from('review-images').remove([decodeURIComponent(m[1].split('?')[0])]); } catch (e) {} }
+    await removeStoragePhotos([photo, before?.photo_url, before?.photo_url2]);
     await admMark(+d.i, 'done'); await load(); toast('리뷰를 삭제했어요'); openAdmin();
   },
   admFindBiz: async d => {
@@ -1907,15 +1998,15 @@ const A = {
     catch (e) { prompt('아래 링크를 복사해 주세요', url); }
   },
   /* v0.066: 내 리뷰 한 개씩 삭제 (한꺼번에 지우기는 제공하지 않음) */
+  editReview: d => openReviewEditor(d.id),
   deleteReview: async d => {
     if (!me || !d.id) return;
     if (!confirm('이 리뷰를 삭제할까요?\n삭제한 리뷰는 되돌릴 수 없어요')) return;
-    const { data: row } = await db.from('reviews').select('id,place_id,photo_url').eq('id', d.id).eq('user_id', me.id).maybeSingle();
+    const { data: row } = await db.from('reviews').select('id,place_id,photo_url,photo_url2').eq('id', d.id).eq('user_id', me.id).maybeSingle();
     if (!row) { toast('삭제할 수 있는 리뷰가 아니에요'); return; }
     const { error } = await db.from('reviews').delete().eq('id', d.id).eq('user_id', me.id);
     if (error) { toast('삭제 실패: ' + error.message); return; }
-    const m = (row.photo_url || '').match(/\/review-images\/(.+)$/);
-    if (m) { try { await db.storage.from('review-images').remove([decodeURIComponent(m[1].split('?')[0])]); } catch (e) { console.warn('사진 삭제 실패', e); } }
+    await removeStoragePhotos([row.photo_url, row.photo_url2]);
     reviewerStatsCache.delete(me.id);
     toast('리뷰를 삭제했어요');
     await load();
@@ -1993,9 +2084,9 @@ const A = {
   },
   focusPrice: () => openReviewComposer(true),
   openReviewComposer: () => openReviewComposer(),
-  closeModal: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} closeModal(); },
+  closeModal: () => { if (welcomeOpen) { A.welcomeDone(); return; } try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} closeModal(); },
   backToPlace: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} if (cur) openPlace(cur); },
-  welcomeDone: () => { closeSheet(); resumePending(); },
+  welcomeDone: () => { welcomeOpen = false; closeModal(); resumePending(); },
   openEditPrice: () => {
     if (!cur) return;
     if (requireLoginFor('editPrice')) return;
@@ -2156,6 +2247,7 @@ const A = {
     if (!scores.kind) missing.push('친절');
     if (missing.length > 0) { toast('별점을 모두 입력해주세요: ' + missing.join(', ')); return; }
 
+    if (editingReview) { await saveReviewEdit(commentVal); return; }
     if ($('pr')) {
       const priceVal = parseInt($('pr').value, 10);
       if (priceVal > 0) {
@@ -2165,29 +2257,19 @@ const A = {
       }
     }
 
-    let photoUrl = null;
-    if (selectedPhotoBlob) {
-      toast('사진 업로드 중...');
-      const filePath = `${cur.id}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`;
-      const { error: upErr } = await db.storage.from('review-images').upload(filePath, selectedPhotoBlob, { contentType: 'image/jpeg' });
-      if (upErr) {
-        toast('사진 업로드 실패: ' + upErr.message);
-        return;
-      }
-      photoUrl = db.storage.from('review-images').getPublicUrl(filePath).data.publicUrl;
-    }
-
-    const finalScore = parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1));
+    const urls = await uploadPhotoSlots(cur.id);
+    if (!urls) return;
     const { error: rErr } = await db.from('reviews').insert({
       user_id: me.id,
       place_id: cur.id,
-      rating: finalScore,
+      rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)),
       taste: scores.taste,
       price_score: scores.price,
       kind: scores.kind,
       is_real: scores.is_real,
       comment: commentVal || null,
-      photo_url: photoUrl
+      photo_url: urls[0] || null,
+      photo_url2: urls[1] || null
     });
     if (rErr){ toast(dbErrMsg(rErr)); return; }
     if (me?.id) reviewerStatsCache.delete(me.id);
@@ -2226,29 +2308,18 @@ const A = {
 
     if (insErr){ toast(dbErrMsg(insErr)); return; }
 
-    let photoUrl = null;
-    if (selectedPhotoBlob) {
-      toast('사진 업로드 중...');
-      const filePath = `${data.id}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`;
-      const { error: upErr } = await db.storage.from('review-images').upload(filePath, selectedPhotoBlob, { contentType: 'image/jpeg' });
-      if (upErr) {
-        toast('사진 업로드 실패: ' + upErr.message);
-      } else {
-        photoUrl = db.storage.from('review-images').getPublicUrl(filePath).data.publicUrl;
-      }
-    }
-
-    const finalScore = parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1));
+    const urls = (await uploadPhotoSlots(data.id)) || [];
     const { error: rErr } = await db.from('reviews').insert({
       user_id: me.id,
       place_id: data.id,
-      rating: finalScore,
+      rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)),
       taste: scores.taste,
       price_score: scores.price,
       kind: scores.kind,
       is_real: scores.is_real,
       comment: commentVal || null,
-      photo_url: photoUrl
+      photo_url: urls[0] || null,
+      photo_url2: urls[1] || null
     });
 
     if (rErr) {
@@ -2421,7 +2492,7 @@ function requireLoginFor(action){
   return true;
 }
 function resumePending(){
-  if (!me || !profileChecked || !places.length) return;
+  if (!me || !profileChecked || !places.length || welcomeOpen) return;
   let job = null;
   try { job = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null'); } catch (e) {}
   if (!job) return;
@@ -2454,8 +2525,11 @@ async function checkUserProfile(user){
   db.rpc('ack_nickname_welcome').then(({ error: e }) => { if (e) console.warn('닉네임 안내 기록 실패:', e); });
   openNicknameWelcome(data.username, Math.max(0, 3 - Number(data.nickname_changes || 0)));
 }
+let welcomeOpen = false;
 function openNicknameWelcome(username, left){
-  sheet('<div class="detail-kicker">가입을 환영해요</div><h2>당신의 닉네임은<br><span class="nick-welcome-name" id="nick-welcome-name">@' + esc(username || '') + '</span> <span class="nick-welcome-tail">입니다</span></h2>' +
+  /* v0.086: 다른 화면에 가려지지 않게 가운데 팝업으로 */
+  welcomeOpen = true;
+  openModal('<div class="detail-kicker">가입을 환영해요</div><h2 id="modal-title">당신의 닉네임은<br><span class="nick-welcome-name" id="nick-welcome-name">@' + esc(username || '') + '</span> <span class="nick-welcome-tail">입니다</span></h2>' +
     '<p class="sub nick-welcome-sub">닉네임이 마음에 안 든다면 다시 뽑을 수 있어요<br>다시 뽑기는 <b>총 3회</b> 가능하고, 이전 닉네임은 다시 쓸 수 없어요</p>' +
     '<div class="btns"><button class="btn" id="nick-welcome-reroll" data-a="welcomeReroll"' + (left > 0 ? '' : ' disabled') + '>🎲 다시 뽑기 (남은 횟수 <span id="nick-welcome-left">' + left + '</span>/3)</button>' +
     '<button class="btn primary" data-a="welcomeDone">이 닉네임으로 할게요</button></div>' +
