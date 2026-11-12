@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>진짜간짜장 · 진짜 간짜장 지도</title>
-<meta name="description" content="전국 진짜 간짜장 후보 지도. 평점과 가격, 리뷰로 진짜 간짜장을 함께 가려내요">
+<title>진짜간짜장 | 진짜 간짜장 지도</title>
+<meta name="description" content="전분물 없이 춘장을 볶는 진짜 간짜장, 어디서 먹을 수 있을까요? 전국 진짜 간짜장 후보를 지도에서 찾고 별점과 가격을 확인하세요">
+<link rel="canonical" href="https://realgjj.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="진짜간짜장">
-<meta property="og:title" content="진짜간짜장 · 진짜 간짜장 지도">
-<meta property="og:description" content="전국 진짜 간짜장 후보 지도. 평점과 가격, 리뷰로 진짜 간짜장을 함께 가려내요">
+<meta property="og:title" content="진짜간짜장 | 진짜 간짜장 지도">
+<meta property="og:description" content="전분물 없이 춘장을 볶는 진짜 간짜장, 어디서 먹을 수 있을까요? 전국 진짜 간짜장 후보를 지도에서 찾고 별점과 가격을 확인하세요">
 <meta property="og:url" content="https://realgjj.com/">
 <meta property="og:image" content="https://realgjj.com/icons/og-1200x630.png">
 <meta property="og:image:width" content="1200">
@@ -16,9 +17,17 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icons/logo.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
+<!-- v0.085: 구글 검색 결과에 사이트 이름·로고가 나오도록 구조화 데이터 -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://realgjj.com/#website","name":"진짜간짜장","alternateName":["realgjj","진짜 간짜장 지도"],"url":"https://realgjj.com/","inLanguage":"ko-KR"},
+{"@type":"Organization","@id":"https://realgjj.com/#org","name":"진짜간짜장","url":"https://realgjj.com/","logo":"https://realgjj.com/icons/icon-512.png","email":"hidden7005@gmail.com"}
+]}
+</script>
 <style>
 :root {
   --system-bg: #f2f2f7;
@@ -913,7 +922,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.084</div>
+<div id="ver-badge">v0.085</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -933,7 +942,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.084</div>
+  <div class="nav-foot">진짜간짜장 · v0.085</div>
 </nav>
 
 <div id="top-container">
