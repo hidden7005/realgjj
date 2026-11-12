@@ -506,10 +506,10 @@ input {
   -webkit-backdrop-filter: saturate(190%) blur(28px); backdrop-filter: saturate(190%) blur(28px);
   padding: 14px 26px; border-radius: 999px;
   font-size: 15px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.35;
-  white-space: nowrap; word-break: keep-all; text-align: center; pointer-events: none;
+  white-space: normal; word-break: keep-all; overflow-wrap: anywhere; text-align: center; pointer-events: none;
   border: 0.5px solid var(--glass-border);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
-  max-width: min(92vw, 540px);
+  max-width: min(92vw, 540px); width: max-content;
 }
 #toast[hidden] { display: none; }
 
@@ -934,11 +934,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 }
 @media(prefers-reduced-motion:reduce){#sheet{transition:none!important;}}
 
+/* v0.087: PC에서 식당 정보 창이 상단 메뉴·검색창·필터를 가리지 않게 */
+@media(min-width:768px){ #sheet,#sheet.place-fullscreen,#sheet.sheet-expanded{max-height:calc(100dvh - 137px)!important;} }
+/* v0.087: 내 리뷰의 수정·삭제 버튼은 한 줄에 붙여서 */
+#sheet .review-actions{margin-left:auto;display:inline-flex;gap:2px;white-space:nowrap}
+#sheet .review-actions .review-report{margin-left:0}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.086</div>
+<div id="ver-badge">v0.087</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -958,7 +963,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.086</div>
+  <div class="nav-foot">진짜간짜장 · v0.087</div>
 </nav>
 
 <div id="top-container">
@@ -1030,7 +1035,10 @@ const SHEET_STAGES = [0.52, 1]; // half, full
 let sheetStage = 1;
 let sheetDrag = null;
 function sheetMaxHeight(){
-  return Math.max(160, (window.visualViewport?.height || window.innerHeight) - (window.innerWidth >= 768 ? 40 : 0));
+  const vh = window.visualViewport?.height || window.innerHeight;
+  /* v0.087: PC에서는 상단 메뉴·검색·필터 버튼 아래에서 시작 (겹치지 않게) */
+  if (window.innerWidth >= 768) { const tb = $('top-container')?.getBoundingClientRect().bottom || 105; return Math.max(160, Math.round(vh - tb - 32)); }
+  return Math.max(160, vh);
 }
 function sheetHeightAt(stage){
   const vh = sheetMaxHeight();
@@ -1449,7 +1457,7 @@ $('sort-bar').addEventListener('click', e => {
     updatePillLabels(); closePopover(); drawPins();
     ++nearbySeq; if (filterRealOnly) clearNearbyMarkers(); else fetchNearbyBiz();
     const realCount = places.filter(isVerifiedReal).length;
-    toast(!filterRealOnly ? '후보 간짜장을 모두 표시합니다' : realCount ? '진짜 간짜장 ' + realCount + '곳만 표시합니다' : '아직 진짜 간짜장으로 확인된 곳이 없어요. 평가 3개 이상, 90% 이상이 진짜라고 한 곳이 여기에 나와요');
+    toast(!filterRealOnly ? '후보 간짜장을 모두 표시합니다' : realCount ? '진짜 간짜장 ' + realCount + '곳만 표시합니다' : '아직 진짜 간짜장으로 확인된 곳이 없어요');
     return;
   }
   if (btn.id === 'pill-reset') {
@@ -1660,7 +1668,7 @@ async function openPlace(p){
     return '<article class="rv"><div class="review-meta">' + (r.user_id ? '<button class="u" data-a="user" data-id="' + esc(r.user_id) + '">@' + esc(r.profiles?.username || '익명') + '</button>' : '<span class="u">탈퇴한 회원</span>') +
       '<span class="reviewer-stats" data-user-stats="' + esc(r.user_id) + '">(집계 중)</span>' +
       (dateText ? '<time class="review-date">' + esc(dateText) + '</time>' : '') + (r.updated_at ? '<span class="review-edited">(수정됨)</span>' : '') +
-      (me?.id && r.user_id === me.id ? '<button class="review-report review-edit" data-a="editReview" data-id="' + esc(r.id) + '">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
+      (me?.id && r.user_id === me.id ? '<span class="review-actions"><button class="review-report review-edit" data-a="editReview" data-id="' + esc(r.id) + '">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button></span>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
       '<div class="review-score">' + badge + ' <strong>★ ' + Number(r.rating || 0).toFixed(1) + '</strong></div>' +
       (r.comment ? '<div class="review-comment">' + esc(r.comment) + '</div>' : '') + photo + '</article>';
   }).join('') : '<p class="detail-empty">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요.</p>';
