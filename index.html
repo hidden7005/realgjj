@@ -506,7 +506,7 @@ input {
   -webkit-backdrop-filter: saturate(190%) blur(28px); backdrop-filter: saturate(190%) blur(28px);
   padding: 14px 26px; border-radius: 999px;
   font-size: 15px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.35;
-  white-space: normal; word-break: keep-all; overflow-wrap: anywhere; text-align: center; pointer-events: none;
+  white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; text-align: center; pointer-events: none;
   border: 0.5px solid var(--glass-border);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
   max-width: min(92vw, 540px); width: max-content;
@@ -1457,7 +1457,7 @@ $('sort-bar').addEventListener('click', e => {
     updatePillLabels(); closePopover(); drawPins();
     ++nearbySeq; if (filterRealOnly) clearNearbyMarkers(); else fetchNearbyBiz();
     const realCount = places.filter(isVerifiedReal).length;
-    toast(!filterRealOnly ? '후보 간짜장을 모두 표시합니다' : realCount ? '진짜 간짜장 ' + realCount + '곳만 표시합니다' : '아직 진짜 간짜장으로 확인된 곳이 없어요');
+    toast(!filterRealOnly ? '후보 간짜장을 모두 표시합니다' : realCount ? '진짜 간짜장 ' + realCount + '곳만 표시합니다' : '아직 진짜 간짜장으로 확인된 곳이 없어요.\n평가 3개 이상, 90% 이상이 진짜라고 한 곳이 여기에 나와요');
     return;
   }
   if (btn.id === 'pill-reset') {
