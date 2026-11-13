@@ -939,11 +939,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 /* v0.087: 내 리뷰의 수정·삭제 버튼은 한 줄에 붙여서 */
 #sheet .review-actions{margin-left:auto;display:inline-flex;gap:2px;white-space:nowrap}
 #sheet .review-actions .review-report{margin-left:0}
+/* v0.088: 구글 공식 로그인 버튼 */
+.gsi-wrap { position:relative; width:100%; min-height:44px; display:flex; justify-content:center; }
+.gsi-wrap[hidden] { display:none; }
+.gsi-block { position:absolute; inset:0; z-index:2; cursor:pointer; border-radius:999px; }
+.gsi-block[hidden] { display:none; }
+#google-fallback[hidden] { display:none !important; }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.087</div>
+<div id="ver-badge">v0.088</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -963,7 +969,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.087</div>
+  <div class="nav-foot">진짜간짜장 · v0.088</div>
 </nav>
 
 <div id="top-container">
@@ -1753,9 +1759,56 @@ function openNew(b){
 function openLogin(returnToPlace = false){
   openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br><br>그런데 광고성 리뷰와 평점 조작을 막고 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 버튼 한 번이면 끝나요</p>' +
     '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>' +
-    '<div class="btns" style="margin-top:14px"><button class="btn primary" data-a="login" data-p="google">Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>');
+    '<div class="btns" style="margin-top:14px"><div class="gsi-wrap" id="gsi-wrap"><div id="gsi-btn"></div><div class="gsi-block" id="gsi-block" data-a="needAgree"></div></div><button class="btn primary" id="google-fallback" data-a="login" data-p="google" hidden>Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>');
 }
-function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; }
+function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; if ($('gsi-btn')) setupGoogleButton(); }
+/* v0.088: 구글 공식 로그인 버튼 (구글 계정 선택 화면에 supabase 주소 대신 realgjj.com이 보이게).
+   받은 ID 토큰으로 Supabase에 로그인. 버튼을 못 불러오면 예전 방식(리디렉션) 버튼을 보여줌 */
+const GOOGLE_CLIENT_ID = '386910730755-etgtb9inb28qmabl8fbuj4872b6hsnl8.apps.googleusercontent.com';
+let gsiLoading = null, gsiNonce = null;
+function loadGsi(){
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (gsiLoading) return gsiLoading;
+  gsiLoading = new Promise((ok, fail) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+    sc.onload = () => ok(); sc.onerror = () => { gsiLoading = null; fail(new Error('gsi')); };
+    document.head.appendChild(sc);
+  });
+  return gsiLoading;
+}
+async function sha256Hex(t){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function syncAgreeBlock(){
+  const ag = $('login-agree'), bl = $('gsi-block');
+  if (bl) bl.hidden = !!ag?.checked;
+  if (ag?.checked) ag.closest('.login-agree')?.classList.remove('need');
+}
+async function setupGoogleButton(){
+  const box = $('gsi-btn'); if (!box) return;
+  $('login-agree')?.addEventListener('change', syncAgreeBlock);
+  syncAgreeBlock();
+  try {
+    await loadGsi();
+    gsiNonce = crypto.getRandomValues(new Uint32Array(4)).join('-');
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential, nonce: await sha256Hex(gsiNonce), ux_mode: 'popup', itp_support: true });
+    if (!$('gsi-btn')) return;
+    const dark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    google.accounts.id.renderButton($('gsi-btn'), { type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'center', locale: 'ko', width: Math.min(400, Math.max(200, Math.round($('gsi-wrap').getBoundingClientRect().width))) });
+  } catch (e) {
+    console.warn('구글 버튼을 불러오지 못해 예전 방식으로 표시', e);
+    if ($('gsi-wrap')) $('gsi-wrap').hidden = true;
+    if ($('google-fallback')) $('google-fallback').hidden = false;
+  }
+}
+async function onGoogleCredential(resp){
+  const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: resp.credential, nonce: gsiNonce });
+  if (error) { toast('로그인하지 못했어요: ' + error.message); return; }
+  if (!welcomeOpen) closeModal();
+  toast('로그인했어요');
+}
 function closeModal(){ $('modal').hidden = true; $('modal-body').innerHTML = ''; }
 
 // 리뷰 작성자 통계는 전체 리뷰(모든 식당)에서 계산합니다.
@@ -2232,6 +2285,7 @@ const A = {
   pick: d => { if (biz[d.id]) openNew(biz[d.id]); else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
   score: d => { scores[d.cat] = +d.n; updateStarsUI(); },
   /* v0.078: 카카오는 이메일 동의항목(account_email)이 없어서 요청 범위를 닉네임·프로필 사진으로 제한 (KOE205 방지) */
+  needAgree: () => { const ag = $('login-agree'); toast('만 14세 이상 확인과 약관 동의에 체크해주세요'); ag?.closest('.login-agree')?.classList.add('need'); },
   login: d => {
     /* v0.083: 만 14세 이상·약관 동의 체크 후에만 로그인 */
     const ag = $('login-agree');
