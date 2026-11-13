@@ -25,7 +25,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebSite","@id":"https://realgjj.com/#website","name":"진짜간짜장","alternateName":["realgjj","진짜 간짜장 지도"],"url":"https://realgjj.com/","inLanguage":"ko-KR"},
-{"@type":"Organization","@id":"https://realgjj.com/#org","name":"진짜간짜장","url":"https://realgjj.com/","logo":"https://realgjj.com/icons/icon-512.png","email":"hidden7005@gmail.com"}
+{"@type":"Organization","@id":"https://realgjj.com/#org","name":"진짜간짜장","url":"https://realgjj.com/","logo":"https://realgjj.com/icons/icon-512.png","email":"hi@realgjj.com"}
 ]}
 </script>
 <style>
@@ -949,7 +949,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.088</div>
+<div id="ver-badge">v0.089</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -969,7 +969,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.088</div>
+  <div class="nav-foot">진짜간짜장 · v0.089</div>
 </nav>
 
 <div id="top-container">
@@ -1920,7 +1920,7 @@ function navContact(type){
   // 일반 문의와 서비스 오류 신고는 하나의 창으로 받습니다.
   if (type === 'partner') {
     sheet('<h2>제휴·광고 문의</h2><p class="sub">식당 제휴, 광고 및 협업은 이메일로 문의해 주세요.</p>' +
-      '<a class="btn primary" style="margin-top:20px" href="mailto:hidden7005@gmail.com?subject=%EC%A7%84%EC%A7%9C%EA%B0%84%EC%A7%9C%EC%9E%A5%20%EC%A0%9C%ED%9C%B4%C2%B7%EA%B4%91%EA%B3%A0%20%EB%AC%B8%EC%9D%98">hidden7005@gmail.com</a>' +
+      '<a class="btn primary" style="margin-top:20px" href="mailto:hi@realgjj.com?subject=%EC%A7%84%EC%A7%9C%EA%B0%84%EC%A7%9C%EC%9E%A5%20%EC%A0%9C%ED%9C%B4%C2%B7%EA%B4%91%EA%B3%A0%20%EB%AC%B8%EC%9D%98">hi@realgjj.com</a>' +
       '<p class="nav-form-note">이메일 주소를 누르면 기기의 메일 앱이 열립니다.</p>');
     return;
   }
@@ -2442,7 +2442,7 @@ const TERMS_DOC = [
   ['제10조 (서비스 변경과 중단)', '서비스는 무료로 제공되며, 운영상·기술상 필요에 따라 내용이 바뀌거나 일시 중단될 수 있습니다. 중요한 변경은 서비스 화면을 통해 미리 알립니다.'],
   ['제11조 (책임의 한계)', '운영자는 이용자가 게시한 정보의 정확성을 보증하지 않으며, 이용자가 서비스 정보를 믿고 한 판단이나 가게 이용 과정에서 생긴 손해에 대해서는 운영자에게 고의 또는 중대한 과실이 없는 한 책임을 지지 않습니다.'],
   ['제12조 (약관 변경)', '약관을 변경할 때는 시행일과 변경 내용을 시행 7일 전부터 서비스 화면에 알립니다. 이용자에게 불리한 변경은 30일 전부터 알립니다.'],
-  ['제13조 (문의)', '서비스 이용 문의와 신고는 메뉴의 ‘문의 · 오류·문제 신고’ 또는 hidden7005@gmail.com 으로 보낼 수 있습니다.']
+  ['제13조 (문의)', '서비스 이용 문의와 신고는 메뉴의 ‘문의 · 오류·문제 신고’ 또는 hi@realgjj.com 으로 보낼 수 있습니다.']
 ];
 const PRIVACY_DOC = [
   ['1. 처리하는 개인정보', [
@@ -2466,7 +2466,7 @@ const PRIVACY_DOC = [
   ['5. 이용자의 권리', '이용자는 언제든지 자신의 개인정보를 열람·정정·삭제하거나 처리 정지를 요청할 수 있습니다. 리뷰 삭제와 회원 탈퇴는 내 정보 화면에서 직접 할 수 있고, 그 밖의 요청은 아래 연락처로 보내 주시면 지체 없이 처리합니다.'],
   ['6. 만 14세 미만', '만 14세 미만 아동의 회원 가입을 받지 않습니다.'],
   ['7. 안전성 확보 조치', '데이터베이스 접근 권한을 최소화하고, 회원은 자신의 정보만, 관리자는 지정된 기능만 처리할 수 있도록 접근을 제한하며, 모든 통신은 암호화(HTTPS)됩니다.'],
-  ['8. 개인정보 보호책임자', '진짜간짜장 운영자 · hidden7005@gmail.com<br>개인정보 침해 신고·상담: 개인정보침해신고센터(국번 없이 118, privacy.kisa.or.kr), 개인정보분쟁조정위원회(1833-6972, kopico.go.kr)'],
+  ['8. 개인정보 보호책임자', '진짜간짜장 운영자 · hi@realgjj.com<br>개인정보 침해 신고·상담: 개인정보침해신고센터(국번 없이 118, privacy.kisa.or.kr), 개인정보분쟁조정위원회(1833-6972, kopico.go.kr)'],
   ['9. 변경', '이 방침이 바뀌면 시행일과 변경 내용을 서비스 화면에 알립니다.']
 ];
 /* v0.071: 관리자 화면 — 요청·신고·제보 확인과 처리 (권한은 DB의 is_admin으로 검사) */
