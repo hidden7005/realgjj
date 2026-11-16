@@ -954,11 +954,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .nav-toggle { position:relative; }
 .nav-toggle-badge { position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:#ff3b30; color:#fff; font-size:11px; font-weight:700; line-height:19px; text-align:center; box-shadow:0 0 0 2px var(--system-bg); }
 .nav-toggle-badge[hidden] { display:none; }
+/* v0.094: 로그인 / 회원가입 탭 */
+.login-tabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:18px; padding:4px; border-radius:12px; background:var(--system-bg); }
+.login-tab { height:38px; border-radius:9px; font-size:15px; font-weight:600; color:var(--label-secondary); }
+.login-tab.on { background:var(--card-bg); color:var(--label-primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.093</div>
+<div id="ver-badge">v0.094</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -978,7 +982,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.093</div>
+  <div class="nav-foot">진짜간짜장 · v0.094</div>
 </nav>
 
 <div id="top-container">
@@ -1780,10 +1784,19 @@ function openNew(b){
 const AGREED_KEY = 'mygjj_agreed_v1';
 function agreedBefore(){ try { return localStorage.getItem(AGREED_KEY) === '1'; } catch (e) { return false; } }
 function rememberAgreed(){ try { localStorage.setItem(AGREED_KEY, '1'); } catch (e) {} }
-function openLogin(returnToPlace = false){
+/* v0.094: 로그인 / 회원가입을 탭으로 나눔. 약관 동의는 회원가입 탭에서만 받음.
+   이 브라우저에서 가입·로그인한 적이 있으면 로그인 탭이 먼저 열림 */
+let loginMode = 'signup';
+const AUTH_MODE_KEY = 'mygjj_auth_mode';
+function rememberAuthMode(){ try { sessionStorage.setItem(AUTH_MODE_KEY, loginMode); } catch (e) {} }
+function openLogin(returnToPlace = false, mode){
+  loginMode = mode || (agreedBefore() ? 'login' : 'signup');
+  const up = loginMode === 'signup';
   openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br><br>그런데 광고성 리뷰와 평점 조작을 막고 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 버튼 한 번이면 끝나요</p>' +
-    (agreedBefore() ? '<p class="login-agreed">이미 동의하셨어요 · <a href="javascript:void(0)" data-a="showTerms">이용약관</a> · <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a></p>' : '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>') +
-    '<div class="btns" style="margin-top:14px"><div class="gsi-wrap" id="gsi-wrap"><div id="gsi-btn"></div><div class="gsi-block" id="gsi-block" data-a="needAgree"></div></div><button class="btn primary" id="google-fallback" data-a="login" data-p="google" hidden>Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>');
+    '<div class="login-tabs" role="tablist"><button type="button" role="tab" class="login-tab' + (up ? '' : ' on') + '" aria-selected="' + !up + '" data-a="loginTab" data-m="login">로그인</button><button type="button" role="tab" class="login-tab' + (up ? ' on' : '') + '" aria-selected="' + up + '" data-a="loginTab" data-m="signup">회원가입</button></div>' +
+    (up ? '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>' : '') +
+    '<div class="btns" style="margin-top:14px"><div class="gsi-wrap" id="gsi-wrap"><div id="gsi-btn"></div><div class="gsi-block" id="gsi-block" data-a="needAgree"></div></div><button class="btn primary" id="google-fallback" data-a="login" data-p="google" hidden>' + (up ? 'Google로 가입하기' : 'Google로 로그인') + '</button><button class="btn" data-a="login" data-p="kakao">' + (up ? '카카오로 가입하기' : '카카오로 로그인') + '</button></div>' +
+    (up ? '' : '<p class="login-agreed">처음이신가요? <a href="javascript:void(0)" data-a="loginTab" data-m="signup">회원가입</a></p>'));
 }
 function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; if ($('gsi-btn')) setupGoogleButton(); }
 /* v0.088: 구글 공식 로그인 버튼 (구글 계정 선택 화면에 supabase 주소 대신 realgjj.com이 보이게).
@@ -1820,7 +1833,7 @@ async function setupGoogleButton(){
     google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential, nonce: await sha256Hex(gsiNonce), ux_mode: 'popup', itp_support: true });
     if (!$('gsi-btn')) return;
     const dark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    google.accounts.id.renderButton($('gsi-btn'), { type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'center', locale: 'ko', width: Math.min(400, Math.max(200, Math.round($('gsi-wrap').getBoundingClientRect().width))) });
+    google.accounts.id.renderButton($('gsi-btn'), { type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', text: loginMode === 'signup' ? 'signup_with' : 'signin_with', shape: 'pill', logo_alignment: 'center', locale: 'ko', width: Math.min(400, Math.max(200, Math.round($('gsi-wrap').getBoundingClientRect().width))) });
   } catch (e) {
     console.warn('구글 버튼을 불러오지 못해 예전 방식으로 표시', e);
     if ($('gsi-wrap')) $('gsi-wrap').hidden = true;
@@ -1828,6 +1841,7 @@ async function setupGoogleButton(){
   }
 }
 async function onGoogleCredential(resp){
+  rememberAuthMode();
   const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: resp.credential, nonce: gsiNonce });
   if (error) { toast('로그인하지 못했어요: ' + error.message); return; }
   if (!welcomeOpen) closeModal();
@@ -2170,7 +2184,7 @@ const A = {
   },
   focusPrice: () => openReviewComposer(true),
   openReviewComposer: () => openReviewComposer(),
-  closeModal: () => { if (welcomeOpen) { A.welcomeDone(); return; } try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} closeModal(); },
+  closeModal: () => { if (consentOpen) { A.consentCancel(); return; } if (welcomeOpen) { A.welcomeDone(); return; } try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} closeModal(); },
   backToPlace: () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} if (cur) openPlace(cur); },
   welcomeDone: () => { welcomeOpen = false; closeModal(); resumePending(); },
   openEditPrice: () => {
@@ -2310,11 +2324,13 @@ const A = {
   pick: d => { if (biz[d.id]) openNew(biz[d.id]); else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
   score: d => { scores[d.cat] = +d.n; updateStarsUI(); },
   /* v0.078: 카카오는 이메일 동의항목(account_email)이 없어서 요청 범위를 닉네임·프로필 사진으로 제한 (KOE205 방지) */
+  loginTab: d => openLogin(false, d.m === 'signup' ? 'signup' : 'login'),
   needAgree: () => { const ag = $('login-agree'); toast('만 14세 이상 확인과 약관 동의에 체크해주세요'); ag?.closest('.login-agree')?.classList.add('need'); },
   login: d => {
     /* v0.083: 만 14세 이상·약관 동의 체크 후에만 로그인 */
     const ag = $('login-agree');
     if (ag && !ag.checked) { toast('만 14세 이상 확인과 약관 동의에 체크해주세요'); ag.closest('.login-agree')?.classList.add('need'); return; }
+    rememberAuthMode();
     return db.auth.signInWithOAuth({ provider: d.p, options: { redirectTo: location.origin + location.pathname, ...(d.p === 'kakao' ? { queryParams: { scope: 'profile_nickname profile_image' } } : {}) } });
   },
   logout: async () => { await db.auth.signOut(); closeSheet(); },
@@ -2617,12 +2633,44 @@ async function checkUserProfile(user){
     db.rpc('is_admin')
   ]);
   setAdmin(adm?.data === true);
-  if (error || !data || data.nickname_welcomed) { profileChecked = true; resumePending(); return; }
+  if (error || !data || data.nickname_welcomed) { if (data?.nickname_welcomed) rememberAgreed(); profileChecked = true; resumePending(); return; }
   nicknameWelcomeShown = true;
   profileChecked = true;
-  db.rpc('ack_nickname_welcome').then(({ error: e }) => { if (e) console.warn('닉네임 안내 기록 실패:', e); });
-  openNicknameWelcome(data.username, Math.max(0, 3 - Number(data.nickname_changes || 0)));
+  /* v0.094: 새 계정인데 회원가입 탭(약관 동의)을 거치지 않았으면, 먼저 동의를 받고 가입을 마침 */
+  let mode = null; try { mode = sessionStorage.getItem(AUTH_MODE_KEY); sessionStorage.removeItem(AUTH_MODE_KEY); } catch (e) {}
+  pendingWelcome = { username: data.username, left: Math.max(0, 3 - Number(data.nickname_changes || 0)) };
+  if (mode === 'signup') finishSignup(); else openSignupConsent();
 }
+let pendingWelcome = null;
+function finishSignup(){
+  const w = pendingWelcome; pendingWelcome = null; if (!w) return;
+  rememberAgreed();
+  db.rpc('ack_nickname_welcome').then(({ error: e }) => { if (e) console.warn('닉네임 안내 기록 실패:', e); });
+  openNicknameWelcome(w.username, w.left);
+}
+function openSignupConsent(){
+  welcomeOpen = true; consentOpen = true;
+  openModal('<div class="detail-kicker">회원가입</div><h2 id="modal-title">아직 가입하지 않은 계정이에요</h2>' +
+    '<p class="sub" style="margin-top:10px">이 계정으로 가입하려면 아래 내용에 동의해 주세요</p>' +
+    '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="?doc=terms" target="_blank" rel="noopener">이용약관</a>과 <a href="?doc=privacy" target="_blank" rel="noopener">개인정보처리방침</a>에 동의해요</span></label>' +
+    '<div class="btns" style="margin-top:14px"><button class="btn primary" data-a="consentJoin">동의하고 가입하기</button><button class="btn" data-a="consentCancel">가입하지 않을래요</button></div>');
+}
+let consentOpen = false;
+A.consentJoin = () => {
+  const ag = $('login-agree');
+  if (ag && !ag.checked) { toast('만 14세 이상 확인과 약관 동의에 체크해주세요'); ag.closest('.login-agree')?.classList.add('need'); return; }
+  consentOpen = false;
+  finishSignup();
+};
+A.consentCancel = async () => {
+  consentOpen = false; welcomeOpen = false; pendingWelcome = null; nicknameWelcomeShown = false;
+  closeModal();
+  try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+  const { error } = await db.rpc('delete_my_account');
+  if (error) console.warn('가입 취소 실패:', error);
+  await db.auth.signOut();
+  toast('가입하지 않았어요');
+};
 let welcomeOpen = false;
 function openNicknameWelcome(username, left){
   /* v0.086: 다른 화면에 가려지지 않게 가운데 팝업으로 */
@@ -2666,7 +2714,7 @@ db.auth.onAuthStateChange((_e, s) => {
   paintMe();
   if (me) checkUserProfile(me);
 });
-function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; if (!me) setAdmin(false); else rememberAgreed(); }
+function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; if (!me) setAdmin(false); }
 
 let userLocationMarker = null;
 let locating = false;
