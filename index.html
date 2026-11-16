@@ -1773,6 +1773,17 @@ async function saveReviewEdit(commentVal){
   toast('리뷰를 수정했어요');
   await load(); openPlace(cur);
 }
+function focusMapOn(lat, lng, minZoom){
+  if (!map || typeof naver === 'undefined' || !naver.maps) return;
+  const la = Number(lat), ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return;
+  try {
+    const pt = new naver.maps.LatLng(la, ln);
+    const z = Math.max(Number(map.getZoom()) || 0, minZoom || 16);
+    map.setCenter(pt);
+    if (z !== map.getZoom()) map.setZoom(z);
+  } catch (e) { console.warn('지도 이동 실패', e); }
+}
 function openNew(b){
   curBiz = b;
   sheet('<h2>' + esc(b.name) + (b.branch ? ' ' + esc(b.branch) : '') + '</h2><p class="sub">' + esc(b.road_addr || b.lot_addr) + '</p>' +
@@ -2320,8 +2331,9 @@ const A = {
       '<div class="btns"><button class="btn primary" data-a="close">확인</button></div>');
     load();
   },
-  place: d => { const p = places.find(x => x.id === d.id); if (p) openPlace(p); },
-  pick: d => { if (biz[d.id]) openNew(biz[d.id]); else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
+  /* v0.094: 목록(검색 결과 등)에서 가게를 누르면 지도도 그 가게 위치로 이동하고 충분히 확대 */
+  place: d => { const p = places.find(x => x.id === d.id); if (p) { focusMapOn(p.lat, p.lng, 16); openPlace(p); } },
+  pick: d => { const b = biz[d.id]; if (b) { focusMapOn(b.lat, b.lng, BIZ_FULL_ZOOM); openNew(b); } else toast('검색 결과가 만료되었습니다. 다시 검색해주세요'); },
   score: d => { scores[d.cat] = +d.n; updateStarsUI(); },
   /* v0.078: 카카오는 이메일 동의항목(account_email)이 없어서 요청 범위를 닉네임·프로필 사진으로 제한 (KOE205 방지) */
   loginTab: d => openLogin(false, d.m === 'signup' ? 'signup' : 'login'),
