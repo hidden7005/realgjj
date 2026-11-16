@@ -423,7 +423,7 @@ input {
   box-shadow: var(--card-shadow);
 }
 .rating-row-real label { font-size: 14px; font-weight: 700; color: var(--label-primary); }
-.segment-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.segment-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .seg-btn {
   height: 42px; border-radius: 12px; font-size: 14px; font-weight: 600;
   background: var(--secondary-card-bg); border: 0.5px solid var(--separator);
@@ -435,6 +435,11 @@ input {
 .seg-btn.active.no {
   background: #8e8e93; color: #fff; border-color: #8e8e93;
 }
+.seg-btn.active.unknown {
+  background: var(--apple-blue); color: #fff; border-color: var(--apple-blue);
+}
+.seg-btn { padding: 0 4px; white-space: nowrap; letter-spacing: -0.03em; }
+@media (max-width: 400px) { .seg-btn { font-size: 13px; } }
 
 .rating-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -1173,7 +1178,7 @@ async function alreadyReviewed(placeId){
 function noScoreChosen(){ return scores.is_real === null && !scores.taste && !scores.price && !scores.kind; }
 function reviewScoreFields(){
   if (noScoreChosen()) return { rating: null, taste: null, price_score: null, kind: null, is_real: null };
-  return { rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)), taste: scores.taste, price_score: scores.price, kind: scores.kind, is_real: scores.is_real };
+  return { rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)), taste: scores.taste, price_score: scores.price, kind: scores.kind, is_real: realValue() };
 }
 function reviewScoreHtml(r, badge){
   return r.rating === null || r.rating === undefined ? '<div class="review-score"><span class="review-memo">방문 메모</span></div>'
@@ -1522,6 +1527,7 @@ function renderRatingComponent(showPriceInput = false, compact = false){
         <label>1. 진짜 간짜장인가요?</label>
         <div class="segment-row">
           <button type="button" class="seg-btn" id="seg-yes" onclick="setRealStatus(true)">👍 네 (진짜)</button>
+          <button type="button" class="seg-btn" id="seg-unknown" onclick="setRealStatus('unknown')">🤔 모르겠어요</button>
           <button type="button" class="seg-btn" id="seg-no" onclick="setRealStatus(false)">✋ 아니요(미달)</button>
         </div>
       </div>
@@ -1562,7 +1568,10 @@ function setRealStatus(status){
   scores.is_real = status;
   $('seg-yes').className = 'seg-btn' + (status === true ? ' active yes' : '');
   $('seg-no').className = 'seg-btn' + (status === false ? ' active no' : '');
+  if ($('seg-unknown')) $('seg-unknown').className = 'seg-btn' + (status === 'unknown' ? ' active unknown' : '');
 }
+/* v0.094: '모르겠어요'를 고르면 진짜 여부는 비워서 저장(null). 진짜 간짜장 판정 계산에서 빠짐 */
+function realValue(){ return scores.is_real === true ? true : scores.is_real === false ? false : null; }
 
 function updateStarsUI(){
   document.querySelectorAll('.star-btn').forEach(btn => {
@@ -1754,6 +1763,7 @@ async function openReviewEditor(id){
   editingReview = { id: r.id, oldPhotos: [r.photo_url, r.photo_url2].filter(Boolean) };
   scores.taste = Number(r.taste) || 0; scores.price = Number(r.price_score) || 0; scores.kind = Number(r.kind) || 0;
   if (r.is_real === true || r.is_real === false) setRealStatus(r.is_real);
+  else if (r.taste !== null && r.taste !== undefined) setRealStatus('unknown');
   updateStarsUI();
   if ($('c')) $('c').value = r.comment || '';
   photoSlots = reviewPhotos(r).map(u => ({ existing: u }));
@@ -2065,10 +2075,10 @@ const A = {
     if (btn) btn.disabled = true;
     const { error } = await db.from('store_requests').insert({
       kind: 'register',
-      payload: { name, address: addr, price: price ? Number(price) : null, is_real: scores.is_real, taste: scores.taste, price_score: scores.price, kind_score: scores.kind, memo, contact },
+      payload: { name, address: addr, price: price ? Number(price) : null, is_real: realValue(), taste: scores.taste, price_score: scores.price, kind_score: scores.kind, memo, contact },
       name: '[등록 요청] ' + name,
       address: addr,
-      note: ['진짜 간짜장: ' + (scores.is_real ? '네' : '아니요(미달)'), '맛 ' + scores.taste + ' · 가격 ' + scores.price + ' · 친절 ' + scores.kind + ' · 종합 ' + total, '간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
+      note: ['진짜 간짜장: ' + (scores.is_real === true ? '네' : scores.is_real === false ? '아니요(미달)' : '모르겠어요'), '맛 ' + scores.taste + ' · 가격 ' + scores.price + ' · 친절 ' + scores.kind + ' · 종합 ' + total, '간짜장 가격: ' + (price ? price + '원' : '미입력'), '연락처: ' + (contact || me?.email || '없음'), '메모: ' + (memo || '없음')].join(' / ')
     });
     if (error) { if (btn) btn.disabled = false; toast('요청 실패: ' + error.message); return; }
     closeSheet();
@@ -2431,7 +2441,7 @@ const A = {
       taste: scores.taste,
       price_score: scores.price,
       kind: scores.kind,
-      is_real: scores.is_real,
+      is_real: realValue(),
       comment: commentVal || null,
       photo_url: urls[0] || null,
       photo_url2: urls[1] || null
