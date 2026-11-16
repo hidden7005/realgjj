@@ -946,11 +946,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .gsi-block { position:absolute; inset:0; z-index:2; cursor:pointer; border-radius:999px; }
 .gsi-block[hidden] { display:none; }
 #google-fallback[hidden] { display:none !important; }
+/* v0.092: 별점 없는 글 */
+.review-memo { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; color:var(--label-secondary); background:var(--secondary-card-bg); border:0.5px solid var(--separator); }
+.memo-hint { margin:8px 2px 0; font-size:12px; line-height:1.5; color:var(--label-tertiary); }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.091</div>
+<div id="ver-badge">v0.092</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -970,7 +973,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.091</div>
+  <div class="nav-foot">진짜간짜장 · v0.092</div>
 </nav>
 
 <div id="top-container">
@@ -1155,7 +1158,17 @@ function dbErrMsg(e){
 async function alreadyReviewed(placeId){
   if (!me || !placeId) return false;
   const { data } = await db.from('reviews').select('id').eq('place_id', placeId).eq('user_id', me.id).limit(1);
-  return !!(data && data.length);
+  return (data && data.length) ? data[0].id : false;
+}
+/* v0.092: 별점 없이 한줄평만 남길 수 있음 (예: 문이 닫혀 있었어요). 이런 글은 평점·진짜 여부 계산에서 빠짐 */
+function noScoreChosen(){ return scores.is_real === null && !scores.taste && !scores.price && !scores.kind; }
+function reviewScoreFields(){
+  if (noScoreChosen()) return { rating: null, taste: null, price_score: null, kind: null, is_real: null };
+  return { rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)), taste: scores.taste, price_score: scores.price, kind: scores.kind, is_real: scores.is_real };
+}
+function reviewScoreHtml(r, badge){
+  return r.rating === null || r.rating === undefined ? '<div class="review-score"><span class="review-memo">방문 메모</span></div>'
+    : '<div class="review-score">' + (badge || '') + ' <strong>★ ' + Number(r.rating || 0).toFixed(1) + '</strong></div>';
 }
 function needLogin(){ if (!me){ openLogin(); return true; } return false; }
 
@@ -1525,7 +1538,8 @@ function renderRatingComponent(showPriceInput = false, compact = false){
       </div>
     </div>
 
-    ${compact ? '' : `<input id="c" placeholder="한줄평 (선택 · 비워도 별점 등록 가능)" maxlength="100">
+    ${compact ? '' : `<input id="c" placeholder="한줄평 (별점 없이 글만 남겨도 돼요)" maxlength="100">
+    <p class="memo-hint">못 먹고 왔다면 별점은 비워 두고 글만 남겨 주세요. 예: 문이 닫혀 있었어요</p>
     <div class="photo-uploader">
       <div id="photo-thumbs" class="photo-thumbs"></div>
       <label for="review-photo-input" class="photo-upload-btn" id="photo-upload-label">
@@ -1676,7 +1690,7 @@ async function openPlace(p){
       '<span class="reviewer-stats" data-user-stats="' + esc(r.user_id) + '">(집계 중)</span>' +
       (dateText ? '<time class="review-date">' + esc(dateText) + '</time>' : '') + (r.updated_at ? '<span class="review-edited">(수정됨)</span>' : '') +
       (me?.id && r.user_id === me.id ? '<span class="review-actions"><button class="review-report review-edit" data-a="editReview" data-id="' + esc(r.id) + '">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button></span>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
-      '<div class="review-score">' + badge + ' <strong>★ ' + Number(r.rating || 0).toFixed(1) + '</strong></div>' +
+      reviewScoreHtml(r, badge) +
       (r.comment ? '<div class="review-comment">' + esc(r.comment) + '</div>' : '') + photo + '</article>';
   }).join('') : '<p class="detail-empty">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요.</p>';
   sheet('<div class="detail-kicker">진짜간짜장 · 식당 정보</div><h2>' + esc(p.name) + '</h2>' + authHeader +
@@ -1702,7 +1716,8 @@ async function openPlace(p){
 async function openReviewComposer(focusPrice = false){
   if (!cur) return;
   if (requireLoginFor(focusPrice ? 'price' : 'review')) return;
-  if (await alreadyReviewed(cur.id)) { toast('이미 평가한 가게예요. 내 리뷰를 지우면 다시 평가할 수 있어요'); return; }
+  const mine = await alreadyReviewed(cur.id);
+  if (mine) { await openReviewEditor(mine); toast('이미 남긴 글이 있어서 수정 화면을 열었어요'); return; }
   const showPriceInput = !(Number(cur.price) > 0);
   sheet('<button class="detail-back" data-a="backToPlace">‹ 식당 정보로 돌아가기</button>' +
     '<div class="detail-kicker">리뷰 작성</div><h2>' + esc(cur.name) + '</h2>' +
@@ -1741,7 +1756,7 @@ async function saveReviewEdit(commentVal){
   const urls = await uploadPhotoSlots(cur.id);
   if (!urls) return;
   const { error } = await db.from('reviews').update({
-    taste: scores.taste, price_score: scores.price, kind: scores.kind, is_real: scores.is_real,
+    ...(({ rating, ...f }) => f)(reviewScoreFields()),
     comment: commentVal || null, photo_url: urls[0] || null, photo_url2: urls[1] || null
   }).eq('id', ed.id).eq('user_id', me.id);
   if (error) { toast(dbErrMsg(error)); return; }
@@ -1832,7 +1847,7 @@ async function getReviewerStats(uid){
     }
     const rated=all.filter(r=>Number.isFinite(Number(r.rating)) && r.rating!==null);
     const avg=rated.length ? rated.reduce((sum,r)=>sum+Number(r.rating),0)/rated.length : 0;
-    return {count:all.length,avg,reviews:all};
+    return {count:rated.length,total:all.length,avg,reviews:all};
   })();
   reviewerStatsCache.set(uid,promise);
   try{return await promise;}catch(e){reviewerStatsCache.delete(uid);throw e;}
@@ -1866,7 +1881,7 @@ function renderUserReviewRows(){
     const date=r.created_at&&!Number.isNaN(Date.parse(r.created_at)) ? new Date(r.created_at).toLocaleDateString('ko-KR') : '';
     const photo=reviewPhotosHtml(r);
     return '<article class="rv user-review-item"><div class="user-review-place"><b>'+esc(name)+'</b><time>'+esc(date)+'</time></div>'+
-      '<div class="review-score"><strong>★ '+Number(r.rating||0).toFixed(1)+'</strong></div>'+
+      reviewScoreHtml(r)+
       (r.comment?'<p class="review-comment">'+esc(r.comment)+'</p>':'')+photo+
       '<div class="user-review-actions">'+(place?'<button class="user-review-go" data-a="place" data-id="'+esc(place.id)+'">식당 보기 ›</button>':'')+
       (profileIsMine?'<button class="review-report review-edit" data-a="editReview" data-id="'+esc(r.id)+'">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="'+esc(r.id)+'">삭제</button>':'')+'</div></article>';
@@ -1893,12 +1908,12 @@ async function openUser(uid, fromReview = false){
     profileIsMine=!!(me?.id && me.id===uid);
     profileReviewOffset=0;
     sheet(backButton+'<div class="detail-kicker">작성자 프로필</div><h2>@'+esc(uname)+'</h2>'+
-      '<p class="sub">평균 평점 ★ '+(stat.count?stat.avg.toFixed(1):'-')+' / 리뷰 '+stat.count+'개</p>'+
+      '<p class="sub">평균 평점 ★ '+(stat.count?stat.avg.toFixed(1):'-')+' / 리뷰 '+stat.total+'개</p>'+
       (nickLeft===null?'':'<button class="btn" data-a="rerollNickname" data-left="'+nickLeft+'"'+(nickLeft>0?'':' disabled')+'>🎲 닉네임 다시 뽑기 (남은 횟수 '+nickLeft+'/3)</button>')+
-      '<section class="detail-section"><div class="detail-section-head"><h3>작성한 리뷰</h3><span class="detail-count">총 '+stat.count+'개</span></div>'+
+      '<section class="detail-section"><div class="detail-section-head"><h3>작성한 리뷰</h3><span class="detail-count">총 '+stat.total+'개</span></div>'+
       '<div id="user-review-list"></div><button id="user-review-more" class="btn" data-a="moreUserReviews" hidden>리뷰 더 보기</button></section>'+
       (me?.id===uid?'<div class="btns"><button class="btn" data-a="logout">로그아웃</button><button class="btn" data-a="withdraw">회원 탈퇴</button></div>':''));
-    if(stat.count)renderUserReviewRows();
+    if(stat.total)renderUserReviewRows();
     else $('user-review-list').innerHTML='<p class="detail-empty">작성한 리뷰가 없습니다.</p>';
   }catch(e){
     console.warn('작성자 리뷰 조회 실패:',e);
@@ -2303,12 +2318,16 @@ const A = {
       toast('욕설이나 비방 표현은 등록할 수 없어요');
       return;
     }
-    if (scores.is_real === null) { toast('1번: 진짜 간짜장인지 선택해주세요'); return; }
-    const missing = [];
-    if (!scores.taste) missing.push('맛');
-    if (!scores.price) missing.push('가격');
-    if (!scores.kind) missing.push('친절');
-    if (missing.length > 0) { toast('별점을 모두 입력해주세요: ' + missing.join(', ')); return; }
+    if (noScoreChosen()) {
+      if (!commentVal) { toast('별점을 남기거나 한줄평을 써주세요'); return; }
+    } else {
+      if (scores.is_real === null) { toast('1번: 진짜 간짜장인지 선택해주세요'); return; }
+      const missing = [];
+      if (!scores.taste) missing.push('맛');
+      if (!scores.price) missing.push('가격');
+      if (!scores.kind) missing.push('친절');
+      if (missing.length > 0) { toast('별점을 모두 입력해주세요: ' + missing.join(', ')); return; }
+    }
 
     if (editingReview) { await saveReviewEdit(commentVal); return; }
     if ($('pr')) {
@@ -2325,18 +2344,14 @@ const A = {
     const { error: rErr } = await db.from('reviews').insert({
       user_id: me.id,
       place_id: cur.id,
-      rating: parseFloat(((scores.taste + scores.price + scores.kind) / 3).toFixed(1)),
-      taste: scores.taste,
-      price_score: scores.price,
-      kind: scores.kind,
-      is_real: scores.is_real,
+      ...reviewScoreFields(),
       comment: commentVal || null,
       photo_url: urls[0] || null,
       photo_url2: urls[1] || null
     });
     if (rErr){ toast(dbErrMsg(rErr)); return; }
     if (me?.id) reviewerStatsCache.delete(me.id);
-    toast('평가가 입력되었어요!');
+    toast(noScoreChosen() ? '글을 남겼어요' : '평가가 입력되었어요!');
     await load(); openPlace(cur);
   },
   saveNew: async () => {
@@ -2523,7 +2538,7 @@ async function openAdmin(){
     } else if (admTab === 'review_report') {
       const rid = admRef(r, 'review'), rv = rid && reviews[rid];
       body = '<div class="adm-body">사유: ' + esc(pl.reason || (r.note || '').match(/사유: ([^/]*)/)?.[1] || '') + (pl.note ? '\n' + esc(pl.note) : '') + '</div>' +
-        (rv ? '<div class="adm-quote">@' + esc(rv.profiles?.username || '탈퇴한 회원') + ' · ★ ' + Number(rv.rating || 0).toFixed(1) + (rv.comment ? '<br>' + esc(rv.comment) : '') + (rv.photo_url ? '<br><a href="' + esc(rv.photo_url) + '" target="_blank" rel="noopener">사진 보기</a>' : '') + '</div>' : '<div class="adm-quote">이미 삭제된 리뷰예요</div>');
+        (rv ? '<div class="adm-quote">@' + esc(rv.profiles?.username || '탈퇴한 회원') + (rv.rating === null ? ' · 방문 메모' : ' · ★ ' + Number(rv.rating || 0).toFixed(1)) + (rv.comment ? '<br>' + esc(rv.comment) : '') + (rv.photo_url ? '<br><a href="' + esc(rv.photo_url) + '" target="_blank" rel="noopener">사진 보기</a>' : '') + '</div>' : '<div class="adm-quote">이미 삭제된 리뷰예요</div>');
       btns = (rv ? '<button class="danger" data-a="admDeleteReview" data-i="' + i + '">리뷰 삭제</button>' : '') + '<button data-a="admSetStatus" data-i="' + i + '" data-s="done">문제없음</button>';
     } else if (admTab === 'place_report') {
       const pid = admRef(r, 'place');
