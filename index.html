@@ -948,7 +948,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #google-fallback[hidden] { display:none !important; }
 /* v0.092: 별점 없는 글 */
 .review-memo { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; color:var(--label-secondary); background:var(--secondary-card-bg); border:0.5px solid var(--separator); }
-.memo-hint { margin:8px 2px 0; font-size:12px; line-height:1.5; color:var(--label-tertiary); }
 </style>
 </head>
 <body>
@@ -1538,8 +1537,7 @@ function renderRatingComponent(showPriceInput = false, compact = false){
       </div>
     </div>
 
-    ${compact ? '' : `<input id="c" placeholder="한줄평 (별점 없이 글만 남겨도 돼요)" maxlength="100">
-    <p class="memo-hint">못 먹고 왔다면 별점은 비워 두고 글만 남겨 주세요. 예: 문이 닫혀 있었어요</p>
+    ${compact ? '' : `<input id="c" placeholder="리뷰/코멘트 남기기" maxlength="100">
     <div class="photo-uploader">
       <div id="photo-thumbs" class="photo-thumbs"></div>
       <label for="review-photo-input" class="photo-upload-btn" id="photo-upload-label">
