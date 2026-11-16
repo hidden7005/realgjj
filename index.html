@@ -950,6 +950,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .review-memo { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; color:var(--label-secondary); background:var(--secondary-card-bg); border:0.5px solid var(--separator); }
 .login-agreed { margin:16px 2px 0; font-size:12px; line-height:1.5; color:var(--label-tertiary); text-align:center; }
 .login-agreed a { color:var(--label-secondary); text-decoration:underline; }
+/* v0.093: 메뉴 버튼의 새 요청 알림 숫자 (관리자에게만 보임) */
+.nav-toggle { position:relative; }
+.nav-toggle-badge { position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:#ff3b30; color:#fff; font-size:11px; font-weight:700; line-height:19px; text-align:center; box-shadow:0 0 0 2px var(--system-bg); }
+.nav-toggle-badge[hidden] { display:none; }
 </style>
 </head>
 <body>
@@ -979,7 +983,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 
 <div id="top-container">
   <div id="top">
-    <button id="nav-toggle" class="glass nav-toggle" type="button" aria-label="전체 메뉴 열기" aria-controls="nav-drawer" aria-expanded="false"><span aria-hidden="true">☰</span><span class="nav-toggle-label">메뉴</span></button>
+    <button id="nav-toggle" class="glass nav-toggle" type="button" aria-label="전체 메뉴 열기" aria-controls="nav-drawer" aria-expanded="false"><span aria-hidden="true">☰</span><span class="nav-toggle-label">메뉴</span><b id="nav-toggle-badge" class="nav-toggle-badge" hidden></b></button>
     <button id="brand-logo" class="glass brand-btn" data-a="refresh" title="지도를 새로고침합니다">
       <picture><source srcset="icons/brand-dark.svg" media="(prefers-color-scheme: dark)"><img class="brand-img" src="icons/brand.svg" alt="진짜간짜장" width="86" height="26"></picture>
     </button>
@@ -1926,6 +1930,7 @@ async function openUser(uid, fromReview = false){
 }
 
 function toggleNav(open){
+  if (open) refreshAdminCount();
   document.body.classList.toggle('nav-open',!!open);
   $('nav-toggle').setAttribute('aria-expanded',String(!!open));
   $('nav-drawer').setAttribute('aria-hidden',String(!open));
@@ -2496,13 +2501,24 @@ let admTab = 'register', admStatus = 'new', admRows = [];
 function setAdmin(v){
   isAdmin = !!v;
   const n = $('nav-admin'); if (n) n.hidden = !isAdmin;
-  if (isAdmin) refreshAdminCount(); else if ($('admin-count')) $('admin-count').textContent = '';
+  if (isAdmin) refreshAdminCount(); else paintAdminCount(0);
+}
+/* v0.093: 새로 들어온 요청·신고·문의 수를 메뉴 버튼과 '관리자' 옆에 빨간 숫자로 표시 (관리자에게만) */
+function paintAdminCount(count){
+  const txt = count > 0 ? (count > 99 ? '99+' : String(count)) : '';
+  if ($('admin-count')) $('admin-count').textContent = txt;
+  const b = $('nav-toggle-badge');
+  if (b) { b.textContent = txt; b.hidden = !txt; }
+  $('nav-toggle')?.setAttribute('aria-label', txt ? '전체 메뉴 열기, 새 요청 ' + txt + '건' : '전체 메뉴 열기');
 }
 async function refreshAdminCount(){
   if (!isAdmin) return;
-  const { count } = await db.from('store_requests').select('id', { count: 'exact', head: true }).eq('status', 'new');
-  if ($('admin-count')) $('admin-count').textContent = count ? String(count) : '';
+  const { count, error } = await db.from('store_requests').select('id', { count: 'exact', head: true }).eq('status', 'new');
+  if (!error) paintAdminCount(count || 0);
 }
+/* 화면으로 돌아올 때와 3분마다 다시 확인 */
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAdminCount(); });
+setInterval(() => { if (!document.hidden) refreshAdminCount(); }, 180000);
 function admRef(r, key){
   if (key === 'review') return r.ref_review || (r.note || '').match(/리뷰ID: ([0-9a-f-]{36})/)?.[1] || null;
   return r.ref_place || (r.note || '').match(/(?:식당|매장)ID: ([0-9a-f-]{36})/)?.[1] || null;
