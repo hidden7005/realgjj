@@ -948,11 +948,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #google-fallback[hidden] { display:none !important; }
 /* v0.092: 별점 없는 글 */
 .review-memo { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; color:var(--label-secondary); background:var(--secondary-card-bg); border:0.5px solid var(--separator); }
+.login-agreed { margin:16px 2px 0; font-size:12px; line-height:1.5; color:var(--label-tertiary); text-align:center; }
+.login-agreed a { color:var(--label-secondary); text-decoration:underline; }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.092</div>
+<div id="ver-badge">v0.093</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -972,7 +974,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.092</div>
+  <div class="nav-foot">진짜간짜장 · v0.093</div>
 </nav>
 
 <div id="top-container">
@@ -1770,9 +1772,13 @@ function openNew(b){
     '<button class="btn primary" style="margin-top:16px" data-a="saveNew">입력하기</button>', {fullscreen:true});
 }
 
+/* v0.093: 만 14세·약관 동의는 처음 한 번만. 이 브라우저에서 동의하고 로그인한 적이 있으면 체크박스를 다시 묻지 않음 */
+const AGREED_KEY = 'mygjj_agreed_v1';
+function agreedBefore(){ try { return localStorage.getItem(AGREED_KEY) === '1'; } catch (e) { return false; } }
+function rememberAgreed(){ try { localStorage.setItem(AGREED_KEY, '1'); } catch (e) {} }
 function openLogin(returnToPlace = false){
   openModal('<h2 id="modal-title">로그인을 부탁드려요 🙏</h2><p class="sub">저도 가입 없이 편하게 쓰실 수 있게 하고 싶었어요<br><br>그런데 광고성 리뷰와 평점 조작을 막고 공정한 지도를 만들려면, 한 사람이 한 번씩만 평가할 수 있어야 했어요<br><br>구글이나 카카오로 버튼 한 번이면 끝나요</p>' +
-    '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>' +
+    (agreedBefore() ? '<p class="login-agreed">이미 동의하셨어요 · <a href="javascript:void(0)" data-a="showTerms">이용약관</a> · <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a></p>' : '<label class="login-agree"><input type="checkbox" id="login-agree"><span>만 14세 이상이며, <a href="javascript:void(0)" data-a="showTerms">이용약관</a>과 <a href="javascript:void(0)" data-a="showPrivacy">개인정보처리방침</a>에 동의해요</span></label>') +
     '<div class="btns" style="margin-top:14px"><div class="gsi-wrap" id="gsi-wrap"><div id="gsi-btn"></div><div class="gsi-block" id="gsi-block" data-a="needAgree"></div></div><button class="btn primary" id="google-fallback" data-a="login" data-p="google" hidden>Google로 계속하기</button><button class="btn" data-a="login" data-p="kakao">카카오로 계속하기</button></div>');
 }
 function openModal(html){ $('modal-body').innerHTML = html; $('modal').hidden = false; if ($('gsi-btn')) setupGoogleButton(); }
@@ -1797,7 +1803,7 @@ async function sha256Hex(t){
 }
 function syncAgreeBlock(){
   const ag = $('login-agree'), bl = $('gsi-block');
-  if (bl) bl.hidden = !!ag?.checked;
+  if (bl) bl.hidden = !ag || ag.checked;
   if (ag?.checked) ag.closest('.login-agree')?.classList.remove('need');
 }
 async function setupGoogleButton(){
@@ -2644,7 +2650,7 @@ db.auth.onAuthStateChange((_e, s) => {
   paintMe();
   if (me) checkUserProfile(me);
 });
-function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; if (!me) setAdmin(false); }
+function paintMe(){ $('nav-account-label').textContent = me ? '내 정보' : '로그인 / 회원가입'; if (!me) setAdmin(false); else rememberAgreed(); }
 
 let userLocationMarker = null;
 let locating = false;
