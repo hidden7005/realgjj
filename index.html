@@ -2919,8 +2919,19 @@ function showNearestPlaces() {
   box.innerHTML = headerHtml + rowsHtml;
   box.hidden = false;
 }
-$('q').addEventListener('focus', e => {
-  if (!e.target.value.trim()) showNearestPlaces();
+/* v0.094: 지도를 눌러 목록이 닫힌 뒤에도, 검색창을 다시 누르거나 엔터를 치면 목록이 다시 나옴 */
+function reopenSearch(){
+  const val = $('q').value.trim();
+  clearTimeout(st);
+  if (!val) { ++searchSeq; showNearestPlaces(); return; }
+  search(val);
+}
+$('q').addEventListener('focus', reopenSearch);
+$('q').addEventListener('click', () => { if ($('res').hidden) reopenSearch(); });
+$('q').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  reopenSearch();
 });
 $('q').oninput = e => {
   clearTimeout(st);
