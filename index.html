@@ -963,11 +963,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .login-tabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:18px; padding:4px; border-radius:12px; background:var(--system-bg); }
 .login-tab { height:38px; border-radius:9px; font-size:15px; font-weight:600; color:var(--label-secondary); }
 .login-tab.on { background:var(--card-bg); color:var(--label-primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
+/* v0.095: 가격 미등록·평가 전 카드도 눌러서 바로 입력 */
+#sheet .stats > .stat-tap { cursor:pointer; position:relative; transition:transform .12s ease, background .12s ease; }
+#sheet .stats > .stat-tap:active { transform:scale(.98); }
+#sheet .stats > .stat-tap::after { content:'›'; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--label-tertiary); }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="ver-badge">v0.094</div>
+<div id="ver-badge">v0.095</div>
 <button id="locate-btn" type="button" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy="false">
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -987,7 +991,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
   <div class="nav-sep"></div>
   <button class="nav-link" type="button" data-a="showTerms"><span class="nav-icon">📄</span>이용약관</button>
   <button class="nav-link" type="button" data-a="showPrivacy"><span class="nav-icon">🔒</span>개인정보처리방침</button>
-  <div class="nav-foot">진짜간짜장 · v0.094</div>
+  <div class="nav-foot">진짜간짜장 · v0.095</div>
 </nav>
 
 <div id="top-container">
@@ -1712,9 +1716,9 @@ async function openPlace(p){
   }).join('') : '<p class="detail-empty">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요.</p>';
   sheet('<div class="detail-kicker">진짜간짜장 · 식당 정보</div><h2>' + esc(p.name) + '</h2>' + authHeader +
     '<p class="sub detail-address">' + esc(addr || '주소 정보가 없습니다') + '</p>' +
-    '<div class="stats"><div><small>간짜장 가격</small><b>' + (priceMissing ? '<span class="detail-price-empty">미등록</span>' : won(p.price) + '원') + '</b>' +
+    '<div class="stats"><div' + (priceMissing ? ' class="stat-tap" role="button" tabindex="0" data-a="focusPrice" aria-label="간짜장 가격 입력하기"' : '') + '><small>간짜장 가격</small><b>' + (priceMissing ? '<span class="detail-price-empty">미등록</span>' : won(p.price) + '원') + '</b>' +
     (!priceMissing ? '<button class="detail-inline-link" data-a="openEditPrice">가격 수정 제보</button>' : '') + '</div>' +
-    '<div><small>사용자 평점</small><b>' + (rt && Number.isFinite(Number(rt.avg_rating)) ? '★ ' + Number(rt.avg_rating).toFixed(1) : '<span class="detail-price-empty">평가 전</span>') + '</b>' +
+    '<div' + (rt ? '' : ' class="stat-tap" role="button" tabindex="0" data-a="openReviewComposer" aria-label="첫 평가 남기기"') + '><small>사용자 평점</small><b>' + (rt && Number.isFinite(Number(rt.avg_rating)) ? '★ ' + Number(rt.avg_rating).toFixed(1) : '<span class="detail-price-empty">평가 전</span>') + '</b>' +
     '<span class="detail-rating-count">' + (rt ? esc(rt.n || 0) + '명 평가' : '첫 평가를 남겨주세요') + '</span></div></div>' + realMeterHtml +
     '<div class="map-links-grid detail-map-links">' +
     '<a class="map-icon-btn" href="' + esc(naverUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="네이버 지도에서 열기"><span class="map-service-icon naver-symbol">N</span><span>네이버 지도</span><span class="map-external-arrow">↗</span></a>' +
@@ -2457,6 +2461,8 @@ const A = {
   }
 };
 
+/* v0.095: 버튼 역할의 카드는 키보드 Enter·Space로도 누를 수 있게 */
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('div[role=button][data-a]')) { e.preventDefault(); e.target.click(); } });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
   if (b && A[b.dataset.a]) {
