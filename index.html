@@ -2037,7 +2037,9 @@ const A = {
   goBiz: d => {
     const b = biz[d.id]; if (!b) { toast('식당 정보를 다시 조회해주세요'); return; }
     closeSheet();
-    focusMapOn(b.lat, b.lng, BIZ_FULL_ZOOM + 1);
+    /* 이미 확대된 상태에서도 묶음이 풀리도록 지금보다 2단계 더 확대 (최대 21) */
+    const zNow = Number(map?.getZoom?.()) || 0;
+    focusMapOn(b.lat, b.lng, Math.min(21, Math.max(BIZ_FULL_ZOOM + 1, zNow + 2)));
     toast((b._place?.name || b.name) + ' 위치예요');
   },
   openNearbyBiz:d=>{ const b=biz[d.id]; if(b?._place) openPlace(b._place); else if(b) openNew(b); else toast('식당 정보를 다시 조회해주세요'); },
