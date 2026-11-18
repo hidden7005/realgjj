@@ -712,7 +712,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .login-agree.need { outline:2px solid #ff3b30; }
 .login-agree.need:has(input:checked) { outline:none; }
 /* v0.084: 검색 목록에서 긴 주소가 오른쪽 거리·가격 글자와 겹치지 않게 */
-#res .row { padding-right:88px; }
+#res .row:has(> i) { padding-right:88px; }
 /* 다크 모드: 사용자가 준 반전 로고(빨간 바탕·크림 그림) */
 @media (prefers-color-scheme: dark) {
   #brand-logo { background:#a11623 !important; }
@@ -2042,11 +2042,19 @@ const A = {
   /* v0.095: '+ 중국집 N곳' 목록에서 고르면 정보 창 대신 지도를 그 가게 위치로 옮기고 크게 확대 */
   goBiz: d => {
     const b = biz[d.id]; if (!b) { toast('식당 정보를 다시 조회해주세요'); return; }
-    closeSheet();
+    closeSheet(); $('res').hidden = true; $('q').blur();
     /* 이미 확대된 상태에서도 묶음이 풀리도록 지금보다 2단계 더 확대 (최대 21) */
     const zNow = Number(map?.getZoom?.()) || 0;
     focusMapOn(b.lat, b.lng, Math.min(21, Math.max(BIZ_FULL_ZOOM + 1, zNow + 2)));
     toast((b._place?.name || b.name) + ' 위치예요');
+  },
+  /* v0.095: 검색·가까운 가게 목록에서 후보 간짜장을 고르면 정보 창 대신 지도를 그 위치로 */
+  goPlace: d => {
+    const p = places.find(x => String(x.id) === String(d.id)); if (!p) return;
+    closeSheet(); $('res').hidden = true; $('q').blur();
+    const zNow = Number(map?.getZoom?.()) || 0;
+    focusMapOn(p.lat, p.lng, Math.max(17, zNow));
+    toast(p.name + ' 위치예요');
   },
   openNearbyBiz:d=>{ const b=biz[d.id]; if(b?._place) openPlace(b._place); else if(b) openNew(b); else toast('식당 정보를 다시 조회해주세요'); },
   closeNav:()=>toggleNav(false),
@@ -2977,7 +2985,7 @@ function showNearestPlaces() {
     const rt = rate[p.id];
     const rateText = rt && Number.isFinite(Number(rt.avg_rating)) ? ` ★${Number(rt.avg_rating).toFixed(1)}` : '';
     const priceText = p.price > 0 ? `${won(p.price)}원` : '가격 미등록';
-    return `<button class="row" data-a="place" data-id="${esc(p.id)}">` +
+    return `<button class="row" data-a="goPlace" data-id="${esc(p.id)}">` +
       `<b>${esc(p.name)}<span style="font-size:13px;color:var(--apple-gold);">${rateText}</span></b>` +
       `<small>${esc(p.address || '주소 정보 없음')} · ${priceText}</small>` +
       `<i>${formatDist(dist)}</i>` +
@@ -3018,8 +3026,8 @@ async function search(q){
   const reg = new Set(places.map(p => String(p.biz_id)));
   const rows = (data || []).filter(b => !reg.has(String(b.id)));
   biz = Object.fromEntries(rows.map(b => [b.id, b]));
-  let h = local.map(p => '<button class="row" data-a="place" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + esc(p.address) + '</small><i>' + (p.price > 0 ? won(p.price) + '원' : '미등록') + '</i></button>').join('');
-  h += rows.map(b => '<button class="row" data-a="pick" data-id="' + esc(b.id) + '"><b>' + esc(b.name) + '</b><small>' + esc(b.road_addr || b.lot_addr) + ' · 등록 가능</small></button>').join('');
+  let h = local.map(p => '<button class="row" data-a="goPlace" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + esc(p.address) + '</small><i>' + (p.price > 0 ? won(p.price) + '원' : '미등록') + '</i></button>').join('');
+  h += rows.map(b => '<button class="row" data-a="goBiz" data-id="' + esc(b.id) + '"><b>' + esc(b.name) + '</b><small>' + esc(b.road_addr || b.lot_addr) + ' · 등록 가능</small></button>').join('');
   box.innerHTML = h || '<div class="empty">검색 결과가 없습니다.</div>';
   box.hidden = false;
 }
