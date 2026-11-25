@@ -969,6 +969,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 #sheet .stats > .stat-tap::after { content:'›'; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--label-tertiary); }
 /* v0.095: 창 안에서 끌 때 브라우저 새로고침·바깥 스크롤로 넘어가지 않게 */
 #sheet, #sheet .sheet-scroll { overscroll-behavior: contain; }
+/* v0.096: 관리자 통계 */
+.adm-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
+.adm-stats > div { padding:12px; border-radius:14px; background:var(--secondary-card-bg); border:0.5px solid var(--separator); min-width:0; }
+.adm-stats small { display:block; font-size:12px; color:var(--label-secondary); }
+.adm-stats b { display:block; font-size:20px; margin-top:2px; font-variant-numeric:tabular-nums; }
+.adm-stats span { display:block; font-size:11px; color:var(--label-tertiary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 </style>
 </head>
 <body>
@@ -2599,7 +2605,7 @@ const PRIVACY_DOC = [
     '<b>회원 가입·로그인</b>: 소셜 로그인 제공처(구글, 카카오)가 전달하는 고유 식별자, 이메일, 이름·프로필 사진 등 제공처가 넘겨주는 정보, 자동으로 정해진 닉네임',
     '<b>서비스 이용</b>: 작성한 리뷰·별점·사진, 가격 제보와 투표 기록, 신고·제보 내용',
     '<b>문의·식당 등록 요청</b>: 이용자가 입력한 내용과, 입력한 경우 연락처(이메일 등)',
-    '<b>자동 생성 정보</b>: 서비스 이용 과정에서 접속 기록(IP 주소, 접속 시각 등)이 호스팅·데이터베이스 제공자의 시스템에 생성될 수 있습니다.',
+    '<b>자동 생성 정보</b>: 서비스 이용 과정에서 접속 기록(IP 주소, 접속 시각 등)이 호스팅·데이터베이스 제공자의 시스템에 생성될 수 있습니다. 하루 방문자 수를 세기 위해 기기 안에 무작위 값을 하나 만들어 방문 날짜와 함께 저장하며, 이 값으로 이용자를 알아낼 수는 없습니다.',
     '<b>위치 정보</b>: 이용자가 허용한 경우 기기 안에서만 쓰며, 서버로 보내거나 저장하지 않습니다.']],
   ['2. 이용 목적', '회원 식별과 로그인 유지, 리뷰 작성자 표시, 중복·부정 평가 방지, 신고와 문의 처리, 서비스 개선을 위해 이용합니다. 광고나 마케팅 목적으로 이용하거나 제3자에게 판매하지 않습니다.'],
   ['3. 보유 기간과 파기', [
@@ -2649,12 +2655,25 @@ function admRef(r, key){
   if (key === 'review') return r.ref_review || (r.note || '').match(/리뷰ID: ([0-9a-f-]{36})/)?.[1] || null;
   return r.ref_place || (r.note || '').match(/(?:식당|매장)ID: ([0-9a-f-]{36})/)?.[1] || null;
 }
+/* v0.096: 관리자 화면 위쪽 숫자 (회원 수, 오늘 가입, 오늘 방문자). 방문자는 브라우저당 하루 1명, 관리자 본인 제외 */
+async function loadAdminStats(){
+  const box = $('adm-stats'); if (!box) return;
+  const { data, error } = await db.rpc('admin_stats');
+  if (error || !data || !$('adm-stats')) return;
+  const n = v => Number(v || 0).toLocaleString('ko-KR');
+  box.innerHTML =
+    '<div><small>회원</small><b>' + n(data.members) + '명</b><span>최근 7일 +' + n(data.new_7d) + '</span></div>' +
+    '<div><small>오늘 가입</small><b>' + n(data.new_today) + '명</b><span>오늘 리뷰 ' + n(data.reviews_today) + '개</span></div>' +
+    '<div><small>오늘 방문</small><b>' + n(data.visits_today) + '명</b><span>어제 ' + n(data.visits_yesterday) + ' · 7일 ' + n(data.visits_7d) + '</span></div>';
+}
 async function openAdmin(){
   if (!isAdmin) return;
   sheet('<div class="detail-kicker">진짜간짜장 관리자</div><h2>요청 · 신고 관리</h2>' +
+    '<div id="adm-stats" class="adm-stats"><div><small>회원</small><b>-</b></div><div><small>오늘 가입</small><b>-</b></div><div><small>오늘 방문</small><b>-</b></div></div>' +
     '<div class="adm-tabs">' + ADM_TABS.map(([k, l]) => '<button class="adm-tab' + (k === admTab ? ' on' : '') + '" data-a="admTab" data-k="' + k + '">' + l + '</button>').join('') + '</div>' +
     (admTab === 'hidden' ? '' : '<div class="adm-status"><button class="adm-tab' + (admStatus === 'new' ? ' on' : '') + '" data-a="admStatus" data-s="new">미처리</button><button class="adm-tab' + (admStatus === 'done' ? ' on' : '') + '" data-a="admStatus" data-s="done">처리됨</button></div>') +
     '<div id="adm-list"><p class="detail-empty">불러오는 중…</p></div>', { fullscreen: true });
+  loadAdminStats();
   const box = $('adm-list');
   if (admTab === 'hidden') {
     box.innerHTML = hiddenPlaces.length ? hiddenPlaces.map(p => '<div class="adm-card"><h4>' + esc(p.name) + '</h4><div class="adm-meta">' + esc(p.address || '') + '</div>' +
@@ -3061,6 +3080,19 @@ async function search(q){
 }
 
 load();
+/* v0.096: 방문자 수 기록 — 브라우저마다 무작위 값 하나, 하루 한 번만. 봇·자동화 브라우저는 기록 안 함 */
+(function logVisit(){
+  try {
+    if (navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit|kakaotalk-scrap/i.test(navigator.userAgent)) return;
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    if (localStorage.getItem('mygjj_visit_day') === today) return;
+    let vid = localStorage.getItem('mygjj_vid');
+    if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12)).toLowerCase(); localStorage.setItem('mygjj_vid', vid); }
+    setTimeout(() => {
+      db.rpc('log_visit', { p_vid: vid }).then(({ error }) => { if (!error) { try { localStorage.setItem('mygjj_visit_day', today); } catch (e) {} } });
+    }, 1500);
+  } catch (e) {}
+})();
 const s = document.createElement('script');
 s.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=' + encodeURIComponent(CLIENT_ID) + '&ncpClientId=' + encodeURIComponent(CLIENT_ID);
 s.onload = initMap;
