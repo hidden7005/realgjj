@@ -2049,16 +2049,26 @@ const A = {
     toast((b._place?.name || b.name) + ' 위치예요');
   },
   /* v0.095: 검색·가까운 가게 목록에서 후보 간짜장을 고르면 정보 창 대신 지도를 그 위치로 */
-  /* v0.096: 왼쪽 위 로고 = 지도 새로고침 (그동안 연결된 동작이 없어서 눌러도 아무 일이 없었음) */
+  /* v0.096: 왼쪽 위 로고 = 처음 접속한 것처럼 첫 화면으로 (필터·검색·열린 창 초기화, 데이터 새로 불러오기).
+     단, 위치 권한을 다시 묻지 않음: 이미 확인한 내 위치가 있으면 그곳으로, 없으면 기본 위치로 */
   refresh: async () => {
     const btn = $('brand-logo');
     if (btn?.dataset.busy) return;
     if (btn) btn.dataset.busy = '1';
-    closeSheet(); closePopover?.(); $('res').hidden = true;
+    closeSheet(); closeModal(); closePopover(); $('res').hidden = true;
+    $('q').value = ''; $('q').blur(); ++searchSeq;
+    filterRealOnly = false; filterJjajangOnly = true; filterRating = 'all'; filterPrice = 'all';
+    updatePillLabels();
+    if (map && typeof naver !== 'undefined' && naver.maps) {
+      try {
+        const home = myCoord ? new naver.maps.LatLng(myCoord.lat, myCoord.lng) : new naver.maps.LatLng(37.5640, 126.9790);
+        map.setCenter(home);
+        map.setZoom(window.matchMedia('(max-width: 767px)').matches ? 16 : 15);
+      } catch (e) { console.warn('첫 화면 이동 실패', e); }
+    }
     try {
       await load();
-      ++nearbySeq; fetchNearbyBiz?.();
-      toast('지도를 새로 불러왔어요');
+      ++nearbySeq; fetchNearbyBiz();
     } finally { if (btn) delete btn.dataset.busy; }
   },
   goPlace: d => {
