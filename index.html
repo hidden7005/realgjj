@@ -981,6 +981,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible 
 .adm-cmt b { font-size:14px; }
 .adm-cmt span { font-size:12px; color:var(--label-tertiary); }
 .adm-cmt p { margin:4px 0 0; font-size:13px; line-height:1.45; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#sheet article.rv { transition:background-color .4s ease; border-radius:12px; }
+#sheet article.rv.rv-focus { background:rgba(255,149,0,.16); box-shadow:0 0 0 6px rgba(255,149,0,.16); }
 </style>
 </head>
 <body>
@@ -1761,7 +1763,7 @@ async function openPlace(p){
     const dateText = r.created_at && !Number.isNaN(new Date(r.created_at).getTime()) ? new Date(r.created_at).toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'}) : '';
     const badge = r.is_real === true ? '<span class="real-badge">진짜</span>' : r.is_real === false ? '<span class="review-not-real">미달</span>' : '';
     const photo = reviewPhotosHtml(r);
-    return '<article class="rv"><div class="review-meta">' + (r.user_id ? '<button class="u" data-a="user" data-id="' + esc(r.user_id) + '">@' + esc(r.profiles?.username || '익명') + '</button>' : '<span class="u">탈퇴한 회원</span>') +
+    return '<article class="rv" data-rid="' + esc(r.id) + '"><div class="review-meta">' + (r.user_id ? '<button class="u" data-a="user" data-id="' + esc(r.user_id) + '">@' + esc(r.profiles?.username || '익명') + '</button>' : '<span class="u">탈퇴한 회원</span>') +
       '<span class="reviewer-stats" data-user-stats="' + esc(r.user_id) + '">(집계 중)</span>' +
       (dateText ? '<time class="review-date">' + esc(dateText) + '</time>' : '') + (r.updated_at ? '<span class="review-edited">(수정됨)</span>' : '') +
       (me?.id && r.user_id === me.id ? '<span class="review-actions"><button class="review-report review-edit" data-a="editReview" data-id="' + esc(r.id) + '">수정</button><button class="review-report review-delete" data-a="deleteReview" data-id="' + esc(r.id) + '">삭제</button></span>' : '<button class="review-report" data-a="reportReview" data-id="' + esc(r.id) + '">신고</button>') + '</div>' +
@@ -2082,6 +2084,18 @@ const A = {
       await load();
       ++nearbySeq; fetchNearbyBiz();
     } finally { if (btn) delete btn.dataset.busy; }
+  },
+  /* v0.096: 관리자 화면의 최근 코멘트를 누르면 그 가게의 해당 리뷰로 바로 이동해서 잠깐 강조 */
+  admGoReview: async d => {
+    const p = places.find(x => String(x.id) === String(d.place)) || hiddenPlaces.find(x => String(x.id) === String(d.place));
+    if (!p) { toast('가게를 찾을 수 없어요'); return; }
+    focusMapOn(p.lat, p.lng, 16);
+    await openPlace(p);
+    const el = [...document.querySelectorAll('#sheet article.rv')].find(a => a.dataset.rid === String(d.id));
+    if (!el) { toast('리뷰를 찾을 수 없어요. 삭제됐을 수 있어요'); return; }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('rv-focus');
+    setTimeout(() => el.classList.remove('rv-focus'), 2500);
   },
   goPlace: d => {
     const p = places.find(x => String(x.id) === String(d.id)); if (!p) return;
@@ -2685,7 +2699,7 @@ async function loadAdminComments(){
   box.innerHTML = '<div class="adm-sub">최근 코멘트</div>' + data.map(r => {
     const pl = places.find(p => String(p.id) === String(r.place_id));
     const when = new Date(r.updated_at || r.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-    return '<button class="adm-cmt" data-a="place" data-id="' + esc(r.place_id) + '"><b>' + esc(pl?.name || '가게') + '</b> <span>' + (r.rating === null ? '방문 메모' : '★ ' + Number(r.rating).toFixed(1)) + ' · @' + esc(r.profiles?.username || '탈퇴한 회원') + ' · ' + esc(when) + '</span><p>' + esc(r.comment) + '</p></button>';
+    return '<button class="adm-cmt" data-a="admGoReview" data-id="' + esc(r.id) + '" data-place="' + esc(r.place_id) + '"><b>' + esc(pl?.name || '가게') + '</b> <span>' + (r.rating === null ? '방문 메모' : '★ ' + Number(r.rating).toFixed(1)) + ' · @' + esc(r.profiles?.username || '탈퇴한 회원') + ' · ' + esc(when) + '</span><p>' + esc(r.comment) + '</p></button>';
   }).join('');
 }
 async function openAdmin(){
