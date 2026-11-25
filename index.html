@@ -2049,6 +2049,18 @@ const A = {
     toast((b._place?.name || b.name) + ' 위치예요');
   },
   /* v0.095: 검색·가까운 가게 목록에서 후보 간짜장을 고르면 정보 창 대신 지도를 그 위치로 */
+  /* v0.096: 왼쪽 위 로고 = 지도 새로고침 (그동안 연결된 동작이 없어서 눌러도 아무 일이 없었음) */
+  refresh: async () => {
+    const btn = $('brand-logo');
+    if (btn?.dataset.busy) return;
+    if (btn) btn.dataset.busy = '1';
+    closeSheet(); closePopover?.(); $('res').hidden = true;
+    try {
+      await load();
+      ++nearbySeq; fetchNearbyBiz?.();
+      toast('지도를 새로 불러왔어요');
+    } finally { if (btn) delete btn.dataset.busy; }
+  },
   goPlace: d => {
     const p = places.find(x => String(x.id) === String(d.id)); if (!p) return;
     closeSheet(); $('res').hidden = true; $('q').blur();
