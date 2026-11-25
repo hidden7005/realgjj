@@ -2103,9 +2103,11 @@ const A = {
     if (error) { toast('추가 실패: ' + error.message); return; }
     await admMark(+d.i, 'done'); await load(); toast(nm + ' 후보에 추가했어요'); openAdmin();
   },
-  /* v0.064: 메뉴 > 식당 등록 요청 (비로그인도 가능, store_requests에 '[등록 요청]'으로 저장) */
+  /* v0.064: 메뉴 > 식당 등록 요청 (store_requests에 '[등록 요청]'으로 저장)
+     v0.095: 별점이 들어가는 요청이라 로그인한 회원만 보낼 수 있음 */
   navStoreRequest:()=>{
     toggleNav(false);
+    if (!me) { toast('식당 등록 요청은 로그인 후에 할 수 있어요'); openLogin(); return; }
     resetScores();
     sheet('<h2>식당 등록 요청</h2><p class="sub nick-welcome-sub">간짜장이 맛있는 식당을 알려 주세요<br>확인한 뒤 후보 간짜장 리스트에 추가할게요</p>' +
       '<input id="sr-name" type="text" maxlength="100" placeholder="가게 이름 (필수)">' +
@@ -2123,6 +2125,7 @@ const A = {
     const price = ($('pr')?.value || '').replace(/[^0-9]/g, '');
     const memo = $('sr-note')?.value.trim() || '';
     const contact = $('sr-contact')?.value.trim() || '';
+    if (!me) { toast('식당 등록 요청은 로그인 후에 할 수 있어요'); openLogin(); return; }
     if (!name) { toast('가게 이름을 입력해 주세요'); return; }
     if (!addr) { toast('주소 또는 지역을 입력해 주세요'); return; }
     if (containsBadWords(name + ' ' + memo)) { toast('욕설이나 비방 표현은 등록할 수 없어요'); return; }
@@ -2138,6 +2141,7 @@ const A = {
     if (btn) btn.disabled = true;
     const { error } = await db.from('store_requests').insert({
       kind: 'register',
+      user_id: me.id,
       payload: { name, address: addr, price: price ? Number(price) : null, is_real: realValue(), taste: scores.taste, price_score: scores.price, kind_score: scores.kind, memo, contact },
       name: '[등록 요청] ' + name,
       address: addr,
@@ -2547,7 +2551,7 @@ const TERMS_DOC = [
     '만 14세 미만은 회원으로 가입할 수 없습니다.',
     '닉네임은 가입 시 자동으로 정해지며, 회원은 총 3회까지 다시 뽑을 수 있습니다. 운영자 계정에는 별도의 이름이 부여될 수 있습니다.',
     '계정은 본인만 이용할 수 있으며, 다른 사람에게 양도하거나 빌려줄 수 없습니다.']],
-  ['제4조 (로그인이 필요한 기능)', '리뷰·별점·사진 등록, 간짜장 가격 입력과 수정 제보, 가격 확인 투표, 가게 정보 오류 제보는 로그인한 회원만 이용할 수 있습니다. 공정한 평가를 위해 한 사람이 한 가게에 한 번씩만 평가하는 것을 원칙으로 합니다. 식당 등록 요청과 문의는 로그인 없이도 보낼 수 있습니다.'],
+  ['제4조 (로그인이 필요한 기능)', '리뷰·별점·사진 등록, 간짜장 가격 입력과 수정 제보, 가격 확인 투표, 가게 정보 오류 제보, 식당 등록 요청은 로그인한 회원만 이용할 수 있습니다. 공정한 평가를 위해 한 사람이 한 가게에 한 번씩만 평가하는 것을 원칙으로 합니다. 식당 등록 요청과 문의는 로그인 없이도 보낼 수 있습니다.'],
   ['제5조 (게시물)', [
     '회원이 작성한 리뷰·별점·사진·가격 제보(이하 “게시물”)의 책임은 작성한 회원에게 있습니다.',
     '회원은 서비스가 게시물을 서비스 화면과 공유 링크에 표시하는 것에 동의합니다. 이 범위를 넘어 게시물을 다른 용도로 쓰지 않습니다.',
@@ -2645,6 +2649,11 @@ async function openAdmin(){
   if (error) { box.innerHTML = '<p class="detail-empty">불러오지 못했어요: ' + esc(error.message) + '</p>'; return; }
   admRows = data || [];
   if (!admRows.length) { box.innerHTML = '<p class="detail-empty">' + (admStatus === 'new' ? '처리할 항목이 없어요 👍' : '처리한 항목이 없어요') + '</p>'; return; }
+  /* v0.095: 요청을 보낸 사람 (회원이면 닉네임, 아니면 비회원) */
+  const askers = {};
+  const uids = [...new Set(admRows.map(r => r.user_id).filter(Boolean))];
+  if (uids.length) { const { data: ps } = await db.from('profiles').select('id,username').in('id', uids); (ps || []).forEach(x => askers[x.id] = x.username); }
+  const asker = r => r.user_id ? '회원 @' + (askers[r.user_id] || '탈퇴한 회원') : '비회원';
   let reviews = {};
   if (admTab === 'review_report') {
     const ids = [...new Set(admRows.map(r => admRef(r, 'review')).filter(Boolean))];
@@ -2673,7 +2682,7 @@ async function openAdmin(){
       btns = '<button data-a="admSetStatus" data-i="' + i + '" data-s="done">처리 완료</button>';
     }
     if (r.status !== 'new') btns = '<button data-a="admSetStatus" data-i="' + i + '" data-s="new">미처리로 되돌리기</button>';
-    return '<div class="adm-card"><h4>' + title + '</h4><div class="adm-meta">' + esc(when) + done + '</div>' + body + '<div class="adm-btns">' + btns + '</div><div id="adm-extra-' + i + '"></div></div>';
+    return '<div class="adm-card"><h4>' + title + '</h4><div class="adm-meta">' + esc(when) + ' · ' + esc(asker(r)) + done + '</div>' + body + '<div class="adm-btns">' + btns + '</div><div id="adm-extra-' + i + '"></div></div>';
   }).join('');
 }
 async function admMark(i, status){
